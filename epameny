@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+# epameny: A ridiculous ANSI menu.
+# By gammy, anno 2025. To reach me, try https://github.com/gammy
+#
+# This definitely will NOT work on all setups: up/down keycodes are precarious
+# at best & printing won't work properly if entries can't fit in the terminal.
+#
+# Only use this for lazy hacks; dialog (1) is a far more sane choice.
+#
+# Copyright (C) 2025 Kristian Gunstone
+# Use of this source code is governed by the Simplified BSD License:
+# https://opensource.org/license/bsd-2-clause
+
+VERSION='0.9'
+
+show_usage() {
+    local self=$(basename "$0")
+    cat <<EOF
+$self v$VERSION: A ridiculous ANSI menu
+
+Usage:
+  $self <title> <default index> <option text> <option value> [...]
+
+The interactive menu is printed to standard error, and the selection
+is printed to standard output in the form '<item index> <item value>'.
+The value is not quoted.
+Negative default indexes can be used to select items beginning from the
+bottom of the list.
+
+Keys:
+  ISO up / down or 'l' / 'j' moves the selection up / down
+  RETURN / ENTER confirms the item selection and exits
+  'q' exits immediately (same as selecting an item with value '::quit::')
+
+Exit states:
+  On immediate exit     : Exit code 2, prints nothing to stdout
+  On interrupt (^C etc) : Exit code 1, prints nothing to stdout
+  On item selection     : Exit code 0, prints <index> <value> to stdout
+                          Except when the seleced value is '::quit::'
+
+Two values have special meanings:
+  The value of '::' is replaced with the accompanying key
+  Selecting a value of '::quit::' is equivalent to pressing 'q'
+
+Example:
+  response=(\$($self 'A Menu:' -1 A :: B 'Selected B' Quit ::quit::)) || exit
+  index="\${response[0]}"   # First parameter is the selected index
+  value="\${response[@]:1}" # Remaining parameters are the value
+  echo "User selected index \$index, value '\$value'"
+
+EOF
+}
+
+ansi()            { echo -en "\033[$*" >&2; }
+goto_prev_row()   { ansi "$1F"; }
+goto_next_row()   { ansi "$1E"; }
+invert_color()    { ansi 7m; }
+reset_color()     { ansi 0m; }
+clear_to_end()    { ansi J; }
+
+create_items() {
+    item_keys=() # global
+    item_vals=() # global
+    item_count=1 # global
+    while [ $# -gt 0 ]; do
+        item_keys+=("$1")
+        [[ "$2" = "::" ]] && item_vals+=("$1") || item_vals+=("$2")
+        (( item_count++ ))
+        shift 2
+    done
+    (( last_item_index = item_count - 1 ))
+}
+
+clear_item_area() {
+    for (( i = 0; i < item_count; i++ )); do
+        clear_to_end
+        echo >&2
+    done
+}
+
+print_items() {
+    local selected="$1"
+    reset_color
+    goto_prev_row $last_item_index
+    for (( i = 0; i < item_count; i++ )); do
+        if [ $i = $selected ]; then
+            invert_color
+            echo -en "${item_keys[$i]}" >&2
+            reset_color
+        else
+            echo -en "${item_keys[$i]}" >&2
+        fi
+        (( i < item_count - 1 )) && goto_next_row
+    done
+}
+
+select_item() {
+    picked="$1"
+    local last_picked=-1
+    while true; do
+        (( last_picked != picked)) && print_items $picked
+        last_picked=$picked
+        read -N 1 -r -s -i x selection
+        [[ "$selection" = $'\n' ]] && break
+        # Up/down keys are escape codes on *NIX ([\r]\e[<code>); Scancode for
+        # up/down on ISO keyboards will be ASCII A & B, the rest is chomped.
+        # newline will also be slurped by '-r'.
+        # Don't expect this to work everywhere.
+        case "$selection" in
+            q|Q) picked=-1; break ;;
+            j|A) ((picked > 0 )) && ((picked--)) ;;
+            k|B) ((picked < last_item_index - 1 )) && ((picked++)) ;;
+        esac
+    done
+}
+
+(( $# < 4 )) && { show_usage; exit 0; }
+
+title="$1"
+default="$2"
+shift 2
+
+create_items "$@" # sets `item_count`, `item_vals`
+
+(( default >= last_item_index )) && default=-1
+(( default < 0 )) && (( default = last_item_index + default ))
+(( default < 0 )) && default=0
+
+[[ -n "$title" ]] && echo "$title" >&2
+
+clear_item_area
+select_item "$default"
+value="${item_vals[$picked]}"
+
+if (( picked == -1 )) || [[ "$value" = "::quit::" ]]; then
+    exit 2
+fi
+
+echo -n "$picked $value"
+exit 0

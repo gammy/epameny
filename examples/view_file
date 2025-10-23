@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# This is just an EXAMPLE; it is NOT a good idea to pass on filenames directly
+# to epameny: escape-sequences, quotes etc in filenames will break things!
+
+list=()
+for f in *; do list+=("View '$f'"); list+=("$f"); done
+
+ret=($(epameny 'Select a file:' 0 "${list[@]}" Cancel ::quit::)) || exit
+
+index=$ret
+filename="${ret[@]:1}"
+
+echo
+echo "Viewing '$filename' (index $index)"
+less "$filename"

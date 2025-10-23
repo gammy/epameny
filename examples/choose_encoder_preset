@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# This is just an EXAMPLE.
+
+ret=($(epameny 'Select a Preset:' -1 \
+       Ultrafast :: \
+       Superfast :: \
+       Veryfast  :: \
+       Faster    :: \
+       Fast      :: \
+       Medium    :: \
+       Slow      :: \
+       Slower    :: \
+       Veryslow  :: \
+       Placebo   :: \
+       Cancel    ::quit::)) || exit
+
+index=$ret
+value="${ret[@]:1}"
+
+echo
+echo "Selected '$value' (index $index)"
