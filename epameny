@@ -114,7 +114,10 @@ select_item() {
     done
 }
 
+
 (( $# < 4 )) && { show_usage; exit 0; }
+
+trap "exit 1" INT
 
 title="$1"
 default="$2"
