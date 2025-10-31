@@ -52,8 +52,10 @@ EOF
 }
 
 ansi()            { echo -en "\033[$*" >&2; }
-goto_prev_row()   { ansi "$1F"; }
-goto_next_row()   { ansi "$1E"; }
+# CPL/CNL (CSI n F/E) are not well supported, so I use
+# CUU/CUD (CSI n A/B) + CHA (CSI n G) instead:
+goto_prev_row()   { ansi "$1A\033[G"; } # "$1F"
+goto_next_row()   { ansi "$1B\033[G"; } # "$1E"
 invert_color()    { ansi 7m; }
 reset_color()     { ansi 0m; }
 clear_to_end()    { ansi J; }
