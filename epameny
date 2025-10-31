@@ -38,14 +38,14 @@ Exit states:
   On item selection     : Exit code 0, prints <index> <value> to stdout
                           Except when the seleced value is '::quit::'
 
-Two values have special meanings:
-  The value of '::' is replaced with the accompanying key
-  Selecting a value of '::quit::' is equivalent to pressing 'q'
+Values with special meaning:
+  The value '::' yields the option text instead of the value
+  Confirming a '::quit::' value is equivalent to pressing 'q'
 
 Example:
-  response=(\$($self 'A Menu:' -1 A :: B 'Selected B' Quit ::quit::)) || exit
-  index="\${response[0]}"   # First parameter is the selected index
-  value="\${response[@]:1}" # Remaining parameters are the value
+  res=(\$($self 'Menu' -1 'Foo bar' :: 'Baz' 'Bizzle' Quit ::quit::)) || exit
+  index="\${res[0]}"   # First parameter is the selected index
+  value="\${res[@]:1}" # Remaining parameters are the value
   echo "User selected index \$index, value '\$value'"
 
 EOF
