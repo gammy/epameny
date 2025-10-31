@@ -11,7 +11,7 @@
 # Use of this source code is governed by the Simplified BSD License:
 # https://opensource.org/license/bsd-2-clause
 
-VERSION='0.9'
+VERSION='0.9.2'
 
 show_usage() {
     local self=$(basename "$0")
@@ -102,7 +102,7 @@ select_item() {
     while true; do
         (( last_picked != picked)) && print_items $picked
         last_picked=$picked
-        read -N 1 -r -s -i x selection
+        read -N 1 -r -s selection
         [[ "$selection" = $'\n' ]] && break
         # Up/down keys are escape codes on *NIX ([\r]\e[<code>); Scancode for
         # up/down on ISO keyboards will be ASCII A & B, the rest is chomped.
