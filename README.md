@@ -7,38 +7,38 @@
 (This README document may be out of date - best check the script itself)
 
 ```
-epameny v0.9: A ridiculous ANSI menu
+epameny v0.9.3: A ridiculous ANSI menu
 
 Usage:
-  epameny <title> <default index> <option text> <option value> [...]
+  epameny <title> <default item index> <item label> <item value> [...]
 
 The interactive menu is printed to standard error, and the selection
-is printed to standard output in the form '<item index> <item value>'.
-The value is not quoted.
-Negative default indexes can be used to select items beginning from the
-bottom of the list.
+is printed to standard output in the form '<item index> <item value>'
+where the former is, like the default item index, a 0-indexed integer
+counting from the first item supplied, and the latter is the
+corresponding item's value, with no additional quoting or escaping.
+A negative default index can be used to select items in reverse order.
 
 Keys:
   ISO up / down or 'l' / 'j' moves the selection up / down
   RETURN / ENTER confirms the item selection and exits
-  'q' exits immediately (same as selecting an item with value '::quit::')
+  'q' exits immediately (as does choosing a '::quit::'-value)
 
 Exit states:
   On immediate exit     : Exit code 2, prints nothing to stdout
   On interrupt (^C etc) : Exit code 1, prints nothing to stdout
-  On item selection     : Exit code 0, prints <index> <value> to stdout
-                          Except when the seleced value is '::quit::'
+  On item confirmation  : Exit code 0, prints <index> <value> to stdout
+                          Except when the selected value is '::quit::'
 
-Two values have special meanings:
-  The value of '::' is replaced with the accompanying key
-  Selecting a value of '::quit::' is equivalent to pressing 'q'
+Special labels & values:
+  Setting a label or a value to '::' copies its obverse property;
+  Confirmation on a '::quit::' value is equivalent to pressing 'q'
 
 Example:
-  response=($(epameny 'A Menu:' -1 A :: B 'Selected B' Quit ::quit::)) || exit
-  index="${response[0]}"   # First parameter is the selected index
-  value="${response[@]:1}" # Remaining parameters are the value
+  res=($(epameny 'Menu' -1 'Foo bar' :: 'Baz' 'Bizzle' Quit ::quit::)) || exit
+  index="${res[0]}"   # First parameter is the selected index
+  value="${res[@]:1}" # Remaining parameters are the value
   echo "User selected index $index, value '$value'"
-
 ```
 
 ## Requirements
