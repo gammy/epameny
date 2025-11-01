@@ -11,7 +11,7 @@
 # Use of this source code is governed by the Simplified BSD License:
 # https://opensource.org/license/bsd-2-clause
 
-VERSION='0.9.2'
+VERSION='0.9.3'
 
 show_usage() {
     local self=$(basename "$0")
@@ -19,28 +19,29 @@ show_usage() {
 $self v$VERSION: A ridiculous ANSI menu
 
 Usage:
-  $self <title> <default index> <option text> <option value> [...]
+  $self <title> <default item index> <item label> <item value> [...]
 
 The interactive menu is printed to standard error, and the selection
-is printed to standard output in the form '<item index> <item value>'.
-The value is not quoted.
-Negative default indexes can be used to select items beginning from the
-bottom of the list.
+is printed to standard output in the form '<item index> <item value>'
+where the former is, like the default item index, a 0-indexed integer
+counting from the first item supplied, and the latter is the
+corresponding item's value, with no additional quoting or escaping.
+A negative default index can be used to select items in reverse order.
 
 Keys:
   ISO up / down or 'l' / 'j' moves the selection up / down
   RETURN / ENTER confirms the item selection and exits
-  'q' exits immediately (same as selecting an item with value '::quit::')
+  'q' exits immediately (as does choosing a '::quit::'-value)
 
 Exit states:
   On immediate exit     : Exit code 2, prints nothing to stdout
   On interrupt (^C etc) : Exit code 1, prints nothing to stdout
-  On item selection     : Exit code 0, prints <index> <value> to stdout
-                          Except when the seleced value is '::quit::'
+  On item confirmation  : Exit code 0, prints <index> <value> to stdout
+                          Except when the selected value is '::quit::'
 
-Values with special meaning:
-  The value '::' yields the option text instead of the value
-  Confirming a '::quit::' value is equivalent to pressing 'q'
+Special labels & values:
+  Setting a label or a value to '::' copies its obverse property;
+  Confirmation on a '::quit::' value is equivalent to pressing 'q'
 
 Example:
   res=(\$($self 'Menu' -1 'Foo bar' :: 'Baz' 'Bizzle' Quit ::quit::)) || exit
@@ -61,20 +62,22 @@ reset_color()     { ansi 0m; }
 clear_to_end()    { ansi J; }
 
 create_items() {
-    item_keys=() # global
-    item_vals=() # global
-    item_count=1 # global
-    while [ $# -gt 0 ]; do
-        item_keys+=("$1")
-        [[ "$2" = "::" ]] && item_vals+=("$1") || item_vals+=("$2")
-        (( item_count++ ))
+    menu_labels=() # global
+    menu_values=() # global
+    menu_length=1 # global
+    while (( $# > 0 )); do
+        a="$1" b="$2"
+        [[ "$a" = '::' ]] && a="$b" || [[ "$b" = '::' ]] && b="$a"
+        menu_labels+=("$a")
+        menu_values+=("$b")
+        (( menu_length++ ))
         shift 2
     done
-    (( last_item_index = item_count - 1 ))
+    (( menu_end = menu_length - 1 ))
 }
 
 clear_item_area() {
-    for (( i = 0; i < item_count; i++ )); do
+    for (( i = 0; i < menu_length; i++ )); do
         clear_to_end
         echo >&2
     done
@@ -83,16 +86,16 @@ clear_item_area() {
 print_items() {
     local selected="$1"
     reset_color
-    goto_prev_row $last_item_index
-    for (( i = 0; i < item_count; i++ )); do
-        if [ $i = $selected ]; then
+    goto_prev_row $menu_end
+    for (( i = 0; i < menu_length; i++ )); do
+        if (( i == selected )); then
             invert_color
-            echo -en "${item_keys[$i]}" >&2
+            echo -en "${menu_labels[$i]}" >&2
             reset_color
         else
-            echo -en "${item_keys[$i]}" >&2
+            echo -en "${menu_labels[$i]}" >&2
         fi
-        (( i < item_count - 1 )) && goto_next_row
+        (( i < menu_length - 1 )) && goto_next_row
     done
 }
 
@@ -111,11 +114,10 @@ select_item() {
         case "$selection" in
             q|Q) picked=-1; break ;;
             j|A) ((picked > 0 )) && ((picked--)) ;;
-            k|B) ((picked < last_item_index - 1 )) && ((picked++)) ;;
+            k|B) ((picked < menu_end - 1 )) && ((picked++)) ;;
         esac
     done
 }
-
 
 (( $# < 4 )) && { show_usage; exit 0; }
 
@@ -125,17 +127,17 @@ title="$1"
 default="$2"
 shift 2
 
-create_items "$@" # sets `item_count`, `item_vals`
+create_items "$@" # sets `menu_{values,length,end}`
 
-(( default >= last_item_index )) && default=-1
-(( default < 0 )) && (( default = last_item_index + default ))
+(( default >= menu_end )) && default=-1
+(( default < 0 )) && (( default = menu_end + default ))
 (( default < 0 )) && default=0
 
 [[ -n "$title" ]] && echo "$title" >&2
 
 clear_item_area
 select_item "$default"
-value="${item_vals[$picked]}"
+value="${menu_values[$picked]}"
 
 if (( picked == -1 )) || [[ "$value" = "::quit::" ]]; then
     exit 2
