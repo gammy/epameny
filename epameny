@@ -52,9 +52,11 @@ Example:
 EOF
 }
 
-ansi()            { echo -en "\033[$*" >&2; }
-# CPL/CNL (CSI n F/E) are not well supported, so I use
-# CUU/CUD (CSI n A/B) + CHA (CSI n G) instead:
+buffer= # Output buffer (flushes to standard error)
+
+ansi()            { buffer+="\033[$*"; }
+#  # CPL/CNL (CSI n F/E) are not well supported, so I use
+#  # CUU/CUD (CSI n A/B) + CHA (CSI n G) instead:
 goto_prev_row()   { ansi "$1A\033[G"; } # "$1F"
 goto_next_row()   { ansi "$1B\033[G"; } # "$1E"
 invert_color()    { ansi 7m; }
@@ -67,6 +69,7 @@ create_items() {
     menu_length=1 # global
     while (( $# > 0 )); do
         a="$1" b="$2"
+        # ..Just keepin 'ya on yer toes!
         [[ "$a" = '::' ]] && a="$b" || [[ "$b" = '::' ]] && b="$a"
         menu_labels+=("$a")
         menu_values+=("$b")
@@ -79,7 +82,7 @@ create_items() {
 clear_item_area() {
     for (( i = 0; i < menu_length; i++ )); do
         clear_to_end
-        echo >&2
+        buffer+="\n"
     done
 }
 
@@ -90,10 +93,10 @@ print_items() {
     for (( i = 0; i < menu_length; i++ )); do
         if (( i == selected )); then
             invert_color
-            echo -en "${menu_labels[$i]}" >&2
+            buffer+="${menu_labels[$i]}"
             reset_color
         else
-            echo -en "${menu_labels[$i]}" >&2
+            buffer+="${menu_labels[$i]}"
         fi
         (( i < menu_length - 1 )) && goto_next_row
     done
@@ -104,6 +107,8 @@ select_item() {
     local last_picked=-1
     while true; do
         (( last_picked != picked)) && print_items $picked
+        echo -en "$buffer" >&2 # Flush our text/ANSI output
+        buffer=                # Reset the buffer
         last_picked=$picked
         read -N 1 -r -s selection
         [[ "$selection" = $'\n' ]] && break
