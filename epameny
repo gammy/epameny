@@ -11,7 +11,7 @@
 # Use of this source code is governed by the Simplified BSD License:
 # https://opensource.org/license/bsd-2-clause
 
-VERSION='0.9.3'
+VERSION='0.9.4'
 
 show_usage() {
     local self=$(basename "$0")
@@ -21,27 +21,28 @@ $self v$VERSION: A ridiculous ANSI menu
 Usage:
   $self <title> <default item index> <item label> <item value> [...]
 
-The interactive menu is printed to standard error, and the selection
-is printed to standard output in the form '<item index> <item value>'
-where the former is, like the default item index, a 0-indexed integer
-counting from the first item supplied, and the latter is the
-corresponding item's value, with no additional quoting or escaping.
+Creates an interactive menu consisting of one or more label/value-pairs.
+Once an item is confirmed, the associated item index & value is printed
+to standard output for the caller to capture & process.
+
+As index-values start counting from 0, the index of the first item is 0.
 A negative default index can be used to select items in reverse order.
+Title and default index are mandatory, but can be left empty.
 
 Keys:
-  ISO up / down or 'l' / 'j' moves the selection up / down
-  RETURN / ENTER confirms the item selection and exits
-  'q' exits immediately (as does choosing a '::quit::'-value)
+  Up / Down, 'l' / 'j'   - Move the selection up or down.
+  Return / Enter         - Confirm the item selection.
+  'q' / 'Q'              - Exit immediately (see also '::quit::').
 
 Exit states:
-  On immediate exit     : Exit code 2, prints nothing to stdout
-  On interrupt (^C etc) : Exit code 1, prints nothing to stdout
-  On item confirmation  : Exit code 0, prints <index> <value> to stdout
-                          Except when the selected value is '::quit::'
+  On immediate exit      - Exit code 2, prints nothing to stdout.
+  On interrupt (^C etc)  - Exit code 1, prints nothing to stdout.
+  On item confirmation   - Exit code 0, prints <index> <value> to stdout,
+                           Except when the selected value is '::quit::'.
 
 Special labels & values:
-  Setting a label or a value to '::' copies its obverse property;
-  Confirmation on a '::quit::' value is equivalent to pressing 'q'
+  A label or value set to '::' will copy the other field's content.
+  A value set to '::quit::' behaves the same as if 'q' was pressed.
 
 Example:
   res=(\$($self 'Menu' -1 'Foo bar' :: 'Baz' 'Bizzle' Quit ::quit::)) || exit
