@@ -1,153 +1,231 @@
 #!/usr/bin/env bash
-# epameny: A ridiculous ANSI menu.
+# epameny: A ridiculous ANSI menu written entirely in bash.
 # By gammy, anno 2025. To reach me, try https://github.com/gammy
 #
-# This definitely will NOT work on all setups: up/down keycodes are precarious
-# at best & printing won't work properly if entries can't fit in the terminal.
+# This will not work on all setups: the keyboard input routine makes
+# several assumtions regarding meta-keys in the operating environment.
+# The display routines also assume that the terminal is at least
+# somewhat aware of ANSI escape sequences.
 #
-# Only use this for lazy hacks; dialog (1) is a far more sane choice.
+# For a more robust & full-featured menu program, see dialog (1).
 #
 # Copyright (C) 2025 Kristian Gunstone
 # Use of this source code is governed by the Simplified BSD License:
 # https://opensource.org/license/bsd-2-clause
 
-VERSION='0.9.4'
+meny_version='0.9.9'
+
+(( default_height = ${LINES:-25} - 2 ))
+(( default_width = ${COLUMNS:-80}))
+meny_height="${meny_height:-$default_height}"
+meny_width="${meny_width:-$default_width}"
+meny_limit="${meny_limit:-1000}"
+meny_wrap="${meny_wrap:-0}"
+meny_sel_prefix="${meny_sel_prefix:-\033[7m}" # SGR Invert
+# (meny_sel_suffix, meny_std_prefix & meny_std_suffix lack defaults)
 
 show_usage() {
     local self=$(basename "$0")
     cat <<EOF
-$self v$VERSION: A ridiculous ANSI menu
+$self v$meny_version: A ridiculous ANSI menu by gammy (code at gammy dot dev)
 
 Usage:
-  $self <title> <default item index> <item label> <item value> [...]
+  $self <default item index> <item label> <item value> [...]
 
 Creates an interactive menu consisting of one or more label/value-pairs.
 Once an item is confirmed, the associated item index & value is printed
-to standard output for the caller to capture & process.
+to standard output for the caller to capture & process. The menu itself
+is printed to standard error.
 
-As index-values start counting from 0, the index of the first item is 0.
+Indexes count from 0: The first item is index 0, the fifth is index 4.
 A negative default index can be used to select items in reverse order.
-Title and default index are mandatory, but can be left empty.
 
 Keys:
-  Up / Down, 'l' / 'j'   - Move the selection up or down.
-  Return / Enter         - Confirm the item selection.
-  'q' / 'Q'              - Exit immediately (see also '::quit::').
+  Up, l, A / Down, j, B  - Move the selection up / down.
+  Return, Enter          - Confirm the item selection.
+  q, Q                   - Exit immediately. See also '::quit::'.
 
 Exit states:
   On immediate exit      - Exit code 2, prints nothing to stdout.
   On interrupt (^C etc)  - Exit code 1, prints nothing to stdout.
-  On item confirmation   - Exit code 0, prints <index> <value> to stdout,
-                           Except when the selected value is '::quit::'.
+  On item confirmation   - Exit code 0, prints \$index \$value to stdout,
+                           except when the selected value is '::quit::'.
+Environment varibles:
+  \$meny_width            - Max. menu width. Ellipsises labels from the left.
+  \$meny_height           - Max. number of items to display on the screen.
+  \$meny_limit            - Max. number items to hold in the scroll-buffer.
+  \$meny_wrap             - 0: Menu stops on its ends. 1: Menu wraps around.
+  \$meny_std_prefix       - Text/ANSI before each non-selected item.
+  \$meny_std_suffix       - Text/ANSI after each non-selected item.
+  \$meny_sel_prefix       - Text/ANSI before the selected item.
+  \$meny_sel_suffix       - Text/ANSI after the selected item.
+
+  Defaults:
+    \$meny_width          - \$COLUMNS if present, or 80 if not.
+    \$meny_height         - \$LINES   (-2) if present, or 25 (-2) if not.
+    \$meny_limit          - 1000     For unlimited items, set it to 0.
+    \$meny_wrap           - 0        Menu stops at its ends.
+    \$meny_sel_prefix     - "\\e[7m"  ANSI sequence for inverting color.
+
+  As prefixes & suffixes may contain non-printable text (e.g ANSI), their
+  string-lengths are not considered when trimming label-widths. You should
+  adjust \$meny_width in such situations e.g (assuming COLUMNS is set),
+    meny_sel_prefix='\\E[1m->'  # len=6, but width=2 (->)
+    let meny_width=\$COLUMNS-2  # adjust for the prefix width
+    export meny_std_prefix meny_length; $self ...
 
 Special labels & values:
   A label or value set to '::' will copy the other field's content.
   A value set to '::quit::' behaves the same as if 'q' was pressed.
 
 Example:
-  res=(\$($self 'Menu' -1 'Foo bar' :: 'Baz' 'Bizzle' Quit ::quit::)) || exit
-  index="\${res[0]}"   # First parameter is the selected index
-  value="\${res[@]:1}" # Remaining parameters are the value
-  echo "User selected index \$index, value '\$value'"
+  res=(\$($self -1 'Item A' 123 'Item B' :: Quit ::quit::)) || exit
+  index="\${res[0]}"   # Param 0 : item index
+  value="\${res[@]:1}" # Param 1+: item value(s)
+  echo "Item index \$index has value \${value@Q}"
 
 EOF
 }
 
-buffer= # Output buffer (flushes to standard error)
+write() { scrbuf+="$*"; }
+ansi()  { scrbuf+="\033[$*"; }
+#goto_next_row()    { ansi "$1B"; } # CUD: Cursor Dn (doesn't scroll)
+goto_prev_row()     { ansi "$1A"; } # CUU: Cursor Up (doesn't scroll)
+goto_col()          { ansi "$1G"; } # CHA: Cursor Horisontal Absolute
+reset_color()       { ansi 0m; }    # SGR: Reset
+clear_to_end()      { ansi J; }     # ED: Erase In Display
+goto_next_row_alt() { write "\n"; } # Emulate CNL
+goto_prev_row_alt() { goto_prev_row "$1"; goto_col 1; } # Emulate CPL
 
-ansi()            { buffer+="\033[$*"; }
-#  # CPL/CNL (CSI n F/E) are not well supported, so I use
-#  # CUU/CUD (CSI n A/B) + CHA (CSI n G) instead:
-goto_prev_row()   { ansi "$1A\033[G"; } # "$1F"
-goto_next_row()   { ansi "$1B\033[G"; } # "$1E"
-invert_color()    { ansi 7m; }
-reset_color()     { ansi 0m; }
-clear_to_end()    { ansi J; }
+hide_cursor() { ansi "?25l"; }              # Hide Cursor (VT220)
+show_cursor() { echo -en "\033[?25h" >&2; } # Show Cursor (VT220) (unbuffered)
 
-create_items() {
-    menu_labels=() # global
-    menu_values=() # global
-    menu_length=1 # global
+update_screen() {
+    echo -en "$scrbuf" >&2
+    scrbuf=
+}
+
+update_viewport() {
+    local dir=$1 buf_stop=$2 scr_stop=$3
+    if (( pick == buf_stop )); then
+        (( ! meny_wrap )) && return
+        if (( dir == 1 )); then
+            buf_offs=0 scr_offs=0 pick=0
+            return
+        fi
+        (( buf_offs = menu_end - meny_zheight ))
+        scr_offs=$meny_zheight
+        pick=$meny_end
+        return
+    fi
+    (( scr_offs == scr_stop )) && { (( buf_offs += dir )); return; }
+    (( scr_offs += dir ))
+}
+
+read_key() {
+    # Up & Down arrow keys will - if we're lucky - be translated to the key
+    # sequences \e[A & \e[B by the terminal. As we ignore the first two
+    # chars & slurp newline, Up & Down will be interpreted as A & B.
+    # This is not a portable approach, but beggars can't be choosers.
+    read -N 1 -r -s keypress
+    case "$keypress" in
+      $'\n') return 1;; # Confirm
+        q|Q) pick=-1 ;; # Cancel
+        j|A) update_viewport -1 0 0 ;; # Move up
+        k|B) update_viewport 1 $menu_end $meny_zheight ;; # Move down
+    esac
+    return 0
+}
+
+load_items() {
+    item_labels=() # global
+    item_values=() # global
+    num_items=0    # global
     while (( $# > 0 )); do
         a="$1" b="$2"
         # ..Just keepin 'ya on yer toes!
         [[ "$a" = '::' ]] && a="$b" || [[ "$b" = '::' ]] && b="$a"
-        menu_labels+=("$a")
-        menu_values+=("$b")
-        (( menu_length++ ))
+        (( a_offs = ${#a} - (meny_width - 2) ))
+        (( a_offs >= 0 )) && a="..${a:$a_offs:$meny_width}"
+        item_labels+=("$a")
+        item_values+=("$b")
+        (( num_items++ ))
+        # XXX will break '::quit::' if clipped off. Solvable?
+        (( meny_limit > 0 && num_items >= meny_limit )) && break
         shift 2
     done
-    (( menu_end = menu_length - 1 ))
 }
 
-clear_item_area() {
-    for (( i = 0; i < menu_length; i++ )); do
-        clear_to_end
-        buffer+="\n"
-    done
-}
-
-print_items() {
-    local selected="$1"
+render_items() {
     reset_color
-    goto_prev_row $menu_end
-    for (( i = 0; i < menu_length; i++ )); do
-        if (( i == selected )); then
-            invert_color
-            buffer+="${menu_labels[$i]}"
-            reset_color
+    for (( i = 0; i < meny_height; i++ )); do
+        (( item_index = buf_offs + i ))
+        if (( item_index == pick )); then
+            prefix="$meny_sel_prefix"
+            suffix="$meny_sel_suffix"
         else
-            buffer+="${menu_labels[$i]}"
+            prefix="$meny_std_prefix"
+            suffix="$meny_std_suffix"
         fi
-        (( i < menu_length - 1 )) && goto_next_row
+        clear_to_end
+        write "${prefix}${item_labels[$item_index]}${suffix}"
+        reset_color
+        goto_next_row_alt
     done
+    (( meny_height > 1 )) && goto_prev_row_alt
 }
 
 select_item() {
-    picked="$1"
-    local last_picked=-1
+    # Compute the initial viewport
+    if (( pick > meny_zheight )); then
+        (( buf_offs = pick - meny_zheight ))
+        (( scr_offs = meny_zheight ))
+    else
+        (( buf_offs = 0 ))
+        (( scr_offs = pick % meny_height ))
+    fi
+
+    local last_pick=-1
+
     while true; do
-        (( last_picked != picked)) && print_items $picked
-        echo -en "$buffer" >&2 # Flush our text/ANSI output
-        buffer=                # Reset the buffer
-        last_picked=$picked
-        read -N 1 -r -s selection
-        [[ "$selection" = $'\n' ]] && break
-        # Up/down keys are escape codes on *NIX ([\r]\e[<code>); Scancode for
-        # up/down on ISO keyboards will be ASCII A & B, the rest is chomped.
-        # newline will also be slurped by '-r'.
-        # Don't expect this to work everywhere.
-        case "$selection" in
-            q|Q) picked=-1; break ;;
-            j|A) ((picked > 0 )) && ((picked--)) ;;
-            k|B) ((picked < menu_end - 1 )) && ((picked++)) ;;
-        esac
+        if (( last_pick != pick )); then
+            render_items
+            update_screen
+            goto_prev_row_alt $meny_zheight
+            last_pick=$pick
+        fi
+        read_key || return 0
+        (( pick == -1 )) && return 1
+        (( pick = buf_offs + scr_offs ))
     done
 }
 
-(( $# < 4 )) && { show_usage; exit 0; }
+(( $# < 3 )) && { show_usage; exit 0; }
+(( $# % 2 != 1 )) && { echo 'Unmatched label/value' >&2; exit 1; }
 
-trap "exit 1" INT
+trap 'exit 1' INT
+trap 'show_cursor; echo >&2' EXIT
 
-title="$1"
-default="$2"
-shift 2
+pick="${1:-0}"; shift
 
-create_items "$@" # sets `menu_{values,length,end}`
+load_items "$@"
 
-(( default >= menu_end )) && default=-1
-(( default < 0 )) && (( default = menu_end + default ))
-(( default < 0 )) && default=0
+(( pick >= num_items ))       && pick=-1
+(( pick < 0 ))                && (( pick = menu_end + pick ))
+(( pick < 0 ))                && pick=0
+(( meny_limit  <= 0 ))        && meny_limit=$num_items
+(( meny_height <= 0 ))        && meny_height=$default_height
+(( meny_height > num_items )) && meny_height=$num_items
 
-[[ -n "$title" ]] && echo "$title" >&2
+(( meny_zheight = meny_height - 1 )) # (convenience)
+(( menu_end = num_items - 1 ))       # (convenience)
 
-clear_item_area
-select_item "$default"
-value="${menu_values[$picked]}"
+scrbuf=
+hide_cursor
+select_item || exit 2
 
-if (( picked == -1 )) || [[ "$value" = "::quit::" ]]; then
-    exit 2
-fi
+value="${item_values[$pick]}"
+[[ "$value" == '::quit::' ]] && exit 2
 
-echo -n "$picked $value"
+echo -n "$pick $value"
 exit 0

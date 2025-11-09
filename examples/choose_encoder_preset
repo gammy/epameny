@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # This is just an EXAMPLE.
 
-ret=($(epameny 'Select a Preset:' -1 \
+echo 'Select a Preset:'
+export meny_height=3
+ret=($(epameny -1 \
        Ultrafast :: \
        Superfast :: \
        Veryfast  :: \

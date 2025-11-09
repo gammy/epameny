@@ -7,39 +7,63 @@
 (This README document may be out of date - best check the script itself)
 
 ```
-epameny v0.9.4: A ridiculous ANSI menu
+epameny v0.9.9: A ridiculous ANSI menu by gammy (code at gammy dot dev)
 
 Usage:
-  epameny <title> <default item index> <item label> <item value> [...]
+  epameny <default item index> <item label> <item value> [...]
 
 Creates an interactive menu consisting of one or more label/value-pairs.
 Once an item is confirmed, the associated item index & value is printed
-to standard output for the caller to capture & process.
+to standard output for the caller to capture & process. The menu itself
+is printed to standard error.
 
-As index-values start counting from 0, the index of the first item is 0.
+Indexes count from 0: The first item is index 0, the fifth is index 4.
 A negative default index can be used to select items in reverse order.
-Title and default index are mandatory, but can be left empty.
 
 Keys:
-  Up / Down, 'l' / 'j'   - Move the selection up or down.
-  Return / Enter         - Confirm the item selection.
-  'q' / 'Q'              - Exit immediately (see also '::quit::').
+  Up, l, A / Down, j, B  - Move the selection up / down.
+  Return, Enter          - Confirm the item selection.
+  q, Q                   - Exit immediately. See also '::quit::'.
 
 Exit states:
   On immediate exit      - Exit code 2, prints nothing to stdout.
   On interrupt (^C etc)  - Exit code 1, prints nothing to stdout.
-  On item confirmation   - Exit code 0, prints <index> <value> to stdout,
-                           Except when the selected value is '::quit::'.
+  On item confirmation   - Exit code 0, prints $index $value to stdout,
+                           except when the selected value is '::quit::'.
+Environment varibles:
+  $meny_width            - Max. menu width. Ellipsises labels from the left.
+  $meny_height           - Max. number of items to display on the screen.
+  $meny_limit            - Max. number items to hold in the scroll-buffer.
+  $meny_wrap             - 0: Menu stops on its ends. 1: Menu wraps around.
+  $meny_std_prefix       - Text/ANSI before each non-selected item.
+  $meny_std_suffix       - Text/ANSI after each non-selected item.
+  $meny_sel_prefix       - Text/ANSI before the selected item.
+  $meny_sel_suffix       - Text/ANSI after the selected item.
+
+  Defaults:
+    $meny_width          - $COLUMNS if present, or 80 if not.
+    $meny_height         - $LINES   (-2) if present, or 25 (-2) if not.
+    $meny_limit          - 1000     For unlimited items, set it to 0.
+    $meny_wrap           - 0        Menu stops at its ends.
+    $meny_sel_prefix     - "\e[7m"  ANSI sequence for inverting color.
+
+  As prefixes & suffixes may contain non-printable text (e.g ANSI), their
+  string-lengths are not considered when trimming label-widths. You should
+  adjust $meny_width in such situations e.g (assuming COLUMNS is set),
+    meny_sel_prefix='\E[1m->'  # len=6, but width=2 (->)
+    let meny_width=$COLUMNS-2  # adjust for the prefix width
+    export meny_std_prefix meny_length; epameny ...
 
 Special labels & values:
   A label or value set to '::' will copy the other field's content.
   A value set to '::quit::' behaves the same as if 'q' was pressed.
 
 Example:
-  res=($(epameny 'Menu' -1 'Foo bar' :: 'Baz' 'Bizzle' Quit ::quit::)) || exit
-  index="${res[0]}"   # First parameter is the selected index
-  value="${res[@]:1}" # Remaining parameters are the value
-  echo "User selected index $index, value '$value'"
+  res=($(epameny -1 'Item A' 123 'Item B' :: Quit ::quit::)) || exit
+  index="${res[0]}"   # Param 0 : item index
+  value="${res[@]:1}" # Param 1+: item value(s)
+  echo "Item index $index has value ${value@Q}"
+
 ```
 
 ## Requirements

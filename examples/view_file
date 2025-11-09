@@ -5,7 +5,8 @@
 list=()
 for f in *; do list+=("View '$f'" "$f"); done
 
-ret=($(epameny 'Select a file:' 0 "${list[@]}" Cancel ::quit::)) || exit
+echo 'Select a file:'
+ret=($(epameny 0 "${list[@]}" Cancel ::quit::)) || exit
 
 index=$ret
 filename="${ret[@]:1}"
