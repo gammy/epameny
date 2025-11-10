@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# This is just an EXAMPLE for epameny:
+# A menu-wrapper for xdg-open.
+
+[[ -f 'styles/silly_01.inc' ]] && source 'styles/silly_01.inc'
+
+for dep in xdg-open epameny; do
+    which $dep >/dev/null 2>&1 \
+        || { echo "$dep is not available." >&2; exit 1; }
+done
+
+if [[ -z "$1" ]]; then
+    self=$(basename "$0")
+    echo "Usage: $self <glob>"
+    echo "Example: $self '*.txt'"
+    exit 0
+fi
+
+items=()
+for item in $(compgen -G "$1"); do
+    items+=("${item@Q}" "${item}")
+done
+
+(( ${#items[@]} == 0 )) && { echo "No matches found."; exit 0; }
+ret=($(epameny 0 'Back' ::quit:: "${items[@]}")) || exit 0
+xdg-open "${ret[@]:1}"

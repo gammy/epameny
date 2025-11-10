@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # This is just an EXAMPLE.
 
-echo 'Select a Preset:'
-export meny_height=3
+[[ -f 'styles/silly_02.inc' ]] && source 'styles/silly_02.inc'
+
+echo 'Select a Preset: '
 ret=($(epameny -1 \
        Ultrafast :: \
        Superfast :: \

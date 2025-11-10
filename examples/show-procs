@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# This is just an EXAMPLE for epameny:
+# Select a user and show their processes in a stupid way.
+
+entries=()
+for name in $(compgen -u | sort -d); do
+    entries+=("$name" "ps --no-headers -u $name -o pid,cmd")
+done
+
+echo "Select a user to view processes for."
+ret=($(epameny 0 "${entries[@]}")) || exit 0
+
+entries=()
+mapfile -t pinfo < <(${ret[1]} ${ret[@]:2})
+for list in "${pinfo[@]}"; do
+    entries+=("$list" "$(echo "$list" | awk '{print $1}')")
+done
+
+if (( ${#entries[@]} == 0 )); then
+    echo "No processes found."
+    exit 0
+fi
+
+echo "Select a process:"
+ret=($(epameny 0 "${entries[@]}")) || exit 0
+echo "Selected PID: ${ret[1]}"
