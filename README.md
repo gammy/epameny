@@ -7,7 +7,7 @@
 (This README document may be out of date - best check the script itself)
 
 ```
-epameny v0.9.9: A ridiculous ANSI menu by gammy (code at gammy dot dev)
+epameny v0.9.9-2: A ridiculous ANSI menu by gammy (code at gammy dot dev)
 
 Usage:
   epameny <default item index> <item label> <item value> [...]
@@ -39,6 +39,7 @@ Environment varibles:
   $meny_std_suffix       - Text/ANSI after each non-selected item.
   $meny_sel_prefix       - Text/ANSI before the selected item.
   $meny_sel_suffix       - Text/ANSI after the selected item.
+  $meny_amend_width      - Formula or value to add to $meny_width.
 
   Defaults:
     $meny_width          - $COLUMNS if present, or 80 if not.
@@ -47,12 +48,12 @@ Environment varibles:
     $meny_wrap           - 0        Menu stops at its ends.
     $meny_sel_prefix     - "\e[7m"  ANSI sequence for inverting color.
 
-  As prefixes & suffixes may contain non-printable text (e.g ANSI), their
-  string-lengths are not considered when trimming label-widths. You should
-  adjust $meny_width in such situations e.g (assuming COLUMNS is set),
-    meny_sel_prefix='\E[1m->'  # len=6, but width=2 (->)
-    let meny_width=$COLUMNS-2  # adjust for the prefix width
-    export meny_std_prefix meny_length; epameny ...
+  As prefixes & suffixes might contain non-printable text (e.g ANSI), their
+  string lengths cannot be used when calculating how much to trim the labels.
+  As $meny_width + $meny_amend_width = effective width, one solution is to set
+  $meny_amend_width to the longest prefix / suffix width used. Given that
+  $meny_std_prefix='>' & $meny_sel_suffix='(select)', meny_amend_width should
+  be set to -8 (the width of the '(select)'-text) to prevent width-overflow.
 
 Special labels & values:
   A label or value set to '::' will copy the other field's content.
@@ -63,7 +64,6 @@ Example:
   index="${res[0]}"   # Param 0 : item index
   value="${res[@]:1}" # Param 1+: item value(s)
   echo "Item index $index has value ${value@Q}"
-
 ```
 
 ## Requirements
