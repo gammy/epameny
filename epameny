@@ -22,6 +22,8 @@ meny_width="${meny_width:-$default_width}"
 meny_limit="${meny_limit:-1000}"
 meny_wrap="${meny_wrap:-0}"
 meny_sel_prefix="${meny_sel_prefix:-\033[7m}" # SGR Invert
+(( meny_width += (meny_amend_width) ))
+
 # (meny_sel_suffix, meny_std_prefix & meny_std_suffix lack defaults)
 
 show_usage() {
@@ -59,6 +61,7 @@ Environment varibles:
   \$meny_std_suffix       - Text/ANSI after each non-selected item.
   \$meny_sel_prefix       - Text/ANSI before the selected item.
   \$meny_sel_suffix       - Text/ANSI after the selected item.
+  \$meny_amend_width      - Formula or value to add to \$meny_width.
 
   Defaults:
     \$meny_width          - \$COLUMNS if present, or 80 if not.
@@ -67,12 +70,12 @@ Environment varibles:
     \$meny_wrap           - 0        Menu stops at its ends.
     \$meny_sel_prefix     - "\\e[7m"  ANSI sequence for inverting color.
 
-  As prefixes & suffixes may contain non-printable text (e.g ANSI), their
-  string-lengths are not considered when trimming label-widths. You should
-  adjust \$meny_width in such situations e.g (assuming COLUMNS is set),
-    meny_sel_prefix='\\E[1m->'  # len=6, but width=2 (->)
-    let meny_width=\$COLUMNS-2  # adjust for the prefix width
-    export meny_std_prefix meny_length; $self ...
+  As prefixes & suffixes might contain non-printable text (e.g ANSI), their
+  string lengths cannot be used when calculating how much to trim the labels.
+  As \$meny_width + \$meny_amend_width = effective width, one solution is to set
+  \$meny_amend_width to the longest prefix / suffix width used. Given that
+  \$meny_std_prefix='>' & \$meny_sel_suffix='(select)', meny_amend_width should
+  be set to -8 (the width of the '(select)'-text) to prevent width-overflow.
 
 Special labels & values:
   A label or value set to '::' will copy the other field's content.
@@ -141,10 +144,12 @@ load_items() {
     item_labels=() # global
     item_values=() # global
     num_items=0    # global
+
     while (( $# > 0 )); do
         a="$1" b="$2"
         # ..Just keepin 'ya on yer toes!
         [[ "$a" = '::' ]] && a="$b" || [[ "$b" = '::' ]] && b="$a"
+        # TODO: assert offset > 0
         (( a_offs = ${#a} - (meny_width - 2) ))
         (( a_offs >= 0 )) && a="..${a:$a_offs:$meny_width}"
         item_labels+=("$a")
@@ -157,6 +162,7 @@ load_items() {
 }
 
 render_items() {
+    local suffix prefix std_width sel_width
     reset_color
     for (( i = 0; i < meny_height; i++ )); do
         (( item_index = buf_offs + i ))
@@ -176,6 +182,8 @@ render_items() {
 }
 
 select_item() {
+    local last_pick=-1
+
     # Compute the initial viewport
     if (( pick > meny_zheight )); then
         (( buf_offs = pick - meny_zheight ))
@@ -185,8 +193,7 @@ select_item() {
         (( scr_offs = pick % meny_height ))
     fi
 
-    local last_pick=-1
-
+    # Start the event loop
     while true; do
         if (( last_pick != pick )); then
             render_items
