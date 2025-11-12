@@ -134,8 +134,8 @@ read_key() {
     case "$keypress" in
       $'\n') return 1;; # Confirm
         q|Q) pick=-1 ;; # Cancel
-        j|A) update_viewport -1 0 0 ;; # Move up
-        k|B) update_viewport 1 $menu_end $meny_zheight ;; # Move down
+        k|A) update_viewport -1 0 0 ;; # Move up
+        j|B) update_viewport 1 $menu_end $meny_zheight ;; # Move down
     esac
     return 0
 }
