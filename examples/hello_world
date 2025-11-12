@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# This is just an EXAMPLE.
+
+res=($(epameny -1 'Item A' 123 'Item B' :: Quit ::quit::)) || exit
+index="${res[0]}"   # Param 0 : item index
+value="${res[@]:1}" # Param 1+: item value(s)
+echo "Item index $index has value ${value@Q}"

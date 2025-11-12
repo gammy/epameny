@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# This is just an EXAMPLE for epameny: A `cd` wrapper menu as a bash function.
+# Note that this must be sourced in your shell for 'cd' to have an effect,
+# e.g `. chdir_function; cd_menu`.
+
+cd_menu() {
+    local header=('OK' '::quit::' '⬏ ../' '../')
+	local dir
+    clear
+    while true; do
+        local list=()
+        for dir in $(compgen -G "*/"); do list+=("$dir" '::'); done
+        echo -e "\033[H\033[4m$PWD\033[0m"
+        ret=($(epameny 1 "${header[@]}" "${list[@]}" )) || return
+        filename="${ret[@]:1}"
+        cd "$filename"
+    done
+}
