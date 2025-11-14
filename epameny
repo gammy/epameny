@@ -15,7 +15,7 @@
 
 meny_version='0.9.9'
 
-(( default_height = ${LINES:-25} - 2 ))
+(( default_height = ${LINES:-25} ))
 (( default_width = ${COLUMNS:-80}))
 meny_height="${meny_height:-$default_height}"
 meny_width="${meny_width:-$default_width}"
@@ -23,6 +23,7 @@ meny_limit="${meny_limit:-1000}"
 meny_wrap="${meny_wrap:-0}"
 meny_sel_prefix="${meny_sel_prefix:-\033[7m}" # SGR Invert
 (( meny_width += (meny_amend_width) ))
+(( meny_height += (meny_amend_height) ))
 
 # (meny_sel_suffix, meny_std_prefix & meny_std_suffix lack defaults)
 
@@ -62,10 +63,11 @@ Environment varibles:
   \$meny_sel_prefix       - Text/ANSI before the selected item.
   \$meny_sel_suffix       - Text/ANSI after the selected item.
   \$meny_amend_width      - Formula or value to add to \$meny_width.
+  \$meny_amend_height     - Formula or value to add to \$meny_height.
 
   Defaults:
     \$meny_width          - \$COLUMNS if present, or 80 if not.
-    \$meny_height         - \$LINES   (-2) if present, or 25 (-2) if not.
+    \$meny_height         - \$LINES   if present, or 25 if not.
     \$meny_limit          - 1000     For unlimited items, set it to 0.
     \$meny_wrap           - 0        Menu stops at its ends.
     \$meny_sel_prefix     - "\\e[7m"  ANSI sequence for inverting color.
@@ -176,9 +178,8 @@ render_items() {
         clear_to_end
         write "${prefix}${item_labels[$item_index]}${suffix}"
         reset_color
-        goto_next_row_alt
+        (( i < meny_height - 1 )) && goto_next_row_alt
     done
-    (( meny_height > 1 )) && goto_prev_row_alt
 }
 
 select_item() {
