@@ -5,14 +5,15 @@
 
 cd_menu() {
     local header=('OK' '::quit::' '⬏ ../' '../')
-	local dir
+	local dir data
     clear
     while true; do
         local list=()
-        for dir in $(compgen -G "*/"); do list+=("$dir" '::'); done
-        echo -e "\033[H\033[4m$PWD\033[0m"
-        ret=($(epameny 1 "${header[@]}" "${list[@]}" )) || return
-        filename="${ret[@]:1}"
+        mapfile -t dirlist < <(compgen -G '*/')
+        for dir in "${dirlist[@]}"; do list+=("$dir" '::'); done
+        echo -e "\033[H\033[4m$PWD\033[0m\033[J"
+        data=($(epameny 1 "${header[@]}" "${list[@]}" )) || return
+        filename="${data[@]:1}"
         cd "$filename"
     done
 }

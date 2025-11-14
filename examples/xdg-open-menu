@@ -22,5 +22,5 @@ for item in $(compgen -G "$1"); do
 done
 
 (( ${#items[@]} == 0 )) && { echo "No matches found."; exit 0; }
-ret=($(epameny 0 'Back' ::quit:: "${items[@]}")) || exit 0
-xdg-open "${ret[@]:1}"
+data=($(epameny 0 'Back' ::quit:: "${items[@]}")) || exit 0
+xdg-open "${data[@]:1}"

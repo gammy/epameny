@@ -4,21 +4,21 @@
 [[ -f 'styles/silly_02.inc' ]] && source 'styles/silly_02.inc'
 
 echo 'Select a Preset: '
-ret=($(epameny -1 \
-       Ultrafast :: \
-       Superfast :: \
-       Veryfast  :: \
-       Faster    :: \
-       Fast      :: \
-       Medium    :: \
-       Slow      :: \
-       Slower    :: \
-       Veryslow  :: \
-       Placebo   :: \
-       Cancel    ::quit::)) || exit
+data=($(epameny -1 \
+        Ultrafast :: \
+        Superfast :: \
+        Veryfast  :: \
+        Faster    :: \
+        Fast      :: \
+        Medium    :: \
+        Slow      :: \
+        Slower    :: \
+        Veryslow  :: \
+        Placebo   :: \
+        Cancel    ::quit::)) || exit
 
-index=$ret
-value="${ret[@]:1}"
+index=$data
+value="${data[@]:1}"
 
 echo
 echo "Selected '$value' (index $index)"
