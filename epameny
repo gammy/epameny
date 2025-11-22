@@ -14,9 +14,13 @@
 # https://opensource.org/license/bsd-2-clause
 
 meny_version='0.9.9'
+# echo "COLUMNS=$COLUMNS" >&2
+# echo "LINES=$LINES" >&2
+# exit
 
-(( default_height = ${LINES:-25} ))
-(( default_width = ${COLUMNS:-80}))
+meny_simple=${meny_simple:-0}
+default_height=${LINES:-25}
+default_width=${COLUMNS:-80}
 meny_height="${meny_height:-$default_height}"
 meny_width="${meny_width:-$default_width}"
 meny_limit="${meny_limit:-1000}"
@@ -25,7 +29,20 @@ meny_sel_prefix="${meny_sel_prefix:-\033[7m}" # SGR Invert
 (( meny_width += (meny_amend_width) ))
 (( meny_height += (meny_amend_height) ))
 
-# (meny_sel_suffix, meny_std_prefix & meny_std_suffix lack defaults)
+# meny_trim_spot -> meny_troffs
+# meny_trim_mark -> meny_trmark
+
+meny_trmark=${meny_trmark:- ~~ }
+troffs_abs=${meny_troffs:-50%}
+# meny_sel_suffix= (no default)
+# meny_std_prefix= (no default)
+# meny_std_suffix= (no default)
+if [[ "${troffs_abs: -1}" == '%' ]]; then
+    (( troffs_abs = (${troffs_abs:0:-1} * meny_width) / 100 ))
+fi
+trmark_len=${#meny_trmark}
+(( label_slen = troffs_abs - trmark_len ))
+
 
 show_usage() {
     local self=$(basename "$0")
@@ -33,12 +50,13 @@ show_usage() {
 $self v$meny_version: A ridiculous ANSI menu by gammy (code at gammy dot dev)
 
 Usage:
-  $self <default item index> <item label> <item value> [...]
+  $self <default item index> <label> [<[value|label]>] [...]
 
 Creates an interactive menu consisting of one or more label/value-pairs.
 Once an item is confirmed, the associated item index & value is printed
 to standard output for the caller to capture & process. The menu itself
-is printed to standard error.
+is printed to standard error. In simple-mode (meny_simple=1), all items
+are treated as labels with values set to '::' (see below).
 
 Indexes count from 0: The first item is index 0, the fifth is index 4.
 A negative default index can be used to select items in reverse order.
@@ -54,6 +72,7 @@ Exit states:
   On item confirmation   - Exit code 0, prints \$index \$value to stdout,
                            except when the selected value is '::quit::'.
 Environment varibles:
+  \$meny_simple           - Treat all items as labels with values set to '::'.
   \$meny_width            - Max. menu width. Ellipsises labels from the left.
   \$meny_height           - Max. number of items to display on the screen.
   \$meny_limit            - Max. number items to hold in the scroll-buffer.
@@ -64,8 +83,11 @@ Environment varibles:
   \$meny_sel_suffix       - Text/ANSI after the selected item.
   \$meny_amend_width      - Formula or value to add to \$meny_width.
   \$meny_amend_height     - Formula or value to add to \$meny_height.
-
+  \$meny_troffs           - Trim long labels at this column. If ending with '%'
+                            the value represents a percentage of \$meny_width.
+  \$meny_trmark           - Marker shown at \$meny_troffs on trimmed labels.
   Defaults:
+    \$meny_simple         - 0        Treat arguments as label/value-pairs.
     \$meny_width          - \$COLUMNS if present, or 80 if not.
     \$meny_height         - \$LINES   if present, or 25 if not.
     \$meny_limit          - 1000     For unlimited items, set it to 0.
@@ -79,11 +101,13 @@ Environment varibles:
   \$meny_std_prefix='>' & \$meny_sel_suffix='(select)', meny_amend_width should
   be set to -8 (the width of the '(select)'-text) to prevent width-overflow.
 
-Special labels & values:
+Special labels & values (not applicable in simple-mode):
   A label or value set to '::' will copy the other field's content.
   A value set to '::quit::' behaves the same as if 'q' was pressed.
 
-Example:
+Examples:
+  echo \$($self 0 'Hello' 'world!')
+
   res=(\$($self -1 'Item A' 123 'Item B' :: Quit ::quit::)) || exit
   index="\${res[0]}"   # Param 0 : item index
   value="\${res[@]:1}" # Param 1+: item value(s)
@@ -146,21 +170,32 @@ load_items() {
     item_labels=() # global
     item_values=() # global
     num_items=0    # global
-
+    local label value
     while (( $# > 0 )); do
-        a="$1" b="$2"
-        # ..Just keepin 'ya on yer toes!
-        [[ "$a" = '::' ]] && a="$b" || [[ "$b" = '::' ]] && b="$a"
-        # TODO: assert offset > 0
-        (( a_offs = ${#a} - (meny_width - 2) ))
-        (( a_offs >= 0 )) && a="..${a:$a_offs:$meny_width}"
-        item_labels+=("$a")
-        item_values+=("$b")
+        label="$1" value="$2"
+        (( label_off = ${#label} - meny_width ))
+        if (( label_off >= 0 )); then
+            (( label_elen = (meny_width - trmark_len) + label_off ))
+            (( label_off = (${#label} - label_slen) - trmark_len ))
+            label_ltrim="${label:0:$label_slen}"
+            label_rtrim="${label:$label_off:$label_elen}"
+            label="${label_ltrim}${meny_trmark}${label_rtrim}"
+        fi
+        if (( ! meny_simple )); then
+            if [[ "$label" = '::' ]]; then
+                label="$value"
+            elif [[ "$value" = '::' ]]; then
+                value="$label"
+            fi
+            item_values+=("$value")
+        fi
+        item_labels+=("$label")
         (( num_items++ ))
         # XXX will break '::quit::' if clipped off. Solvable?
         (( meny_limit > 0 && num_items >= meny_limit )) && break
-        shift 2
+        shift $simple_offset
     done
+
 }
 
 render_items() {
@@ -208,8 +243,15 @@ select_item() {
     done
 }
 
-(( $# < 3 )) && { show_usage; exit 0; }
-(( $# % 2 != 1 )) && { echo 'Unmatched label/value' >&2; exit 1; }
+(( simple_offset = 2 - meny_simple ))
+
+(( $# < (3 - meny_simple) )) \
+    && { show_usage; exit 0; }
+(( $# % simple_offset != (1 - meny_simple) )) \
+    && { echo 'Unmatched label/value' >&2; exit 1; }
+
+declare -n values_ptr
+(( meny_simple )) && values_ptr=item_labels || values_ptr=item_values
 
 trap 'exit 1' INT
 trap 'show_cursor; echo >&2' EXIT
@@ -228,11 +270,15 @@ load_items "$@"
 (( meny_zheight = meny_height - 1 )) # (convenience)
 (( menu_end = num_items - 1 ))       # (convenience)
 
+# echo "meny_width=$meny_width" >&2
+# echo "meny_height=$meny_height" >&2
+# exit
+
 scrbuf=
 hide_cursor
 select_item || exit 2
 
-value="${item_values[$pick]}"
+value="${values_ptr[$pick]}"
 [[ "$value" == '::quit::' ]] && exit 2
 
 echo -n "$pick $value"
