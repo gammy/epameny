@@ -25,24 +25,29 @@ meny_height="${meny_height:-$default_height}"
 meny_width="${meny_width:-$default_width}"
 meny_limit="${meny_limit:-1000}"
 meny_wrap="${meny_wrap:-0}"
-meny_sel_prefix="${meny_sel_prefix:-\033[7m}" # SGR Invert
-(( meny_width += (meny_amend_width) ))
-(( meny_height += (meny_amend_height) ))
+meny_lslmark="${meny_lslmark:-\033[7m}" # SGR Invert
+(( meny_width += (meny_awidth) ))
+(( meny_height += (meny_aheight) ))
 
 # meny_trim_spot -> meny_troffs
 # meny_trim_mark -> meny_trmark
 
 meny_trmark=${meny_trmark:- ~~ }
 troffs_abs=${meny_troffs:-50%}
-# meny_sel_suffix= (no default)
-# meny_std_prefix= (no default)
-# meny_std_suffix= (no default)
+# meny_lsrmark= (no default)
+# meny_lnlmark= (no default)
+# meny_lnrmark= (no default)
 if [[ "${troffs_abs: -1}" == '%' ]]; then
     (( troffs_abs = (${troffs_abs:0:-1} * meny_width) / 100 ))
 fi
 trmark_len=${#meny_trmark}
 (( label_slen = troffs_abs - trmark_len ))
+(( label_slen < 0)) && { (( troffs_abs += label_slen )); label_slen=0; }
 
+# echo "trmark='$meny_trmark'" >&2
+# echo "trmark_len=$trmark_len" >&2
+# echo "label_slen=$label_slen" >&2
+# exit
 
 show_usage() {
     local self=$(basename "$0")
@@ -77,12 +82,12 @@ Environment varibles:
   \$meny_height           - Max. number of items to display on the screen.
   \$meny_limit            - Max. number items to hold in the scroll-buffer.
   \$meny_wrap             - 0: Menu stops on its ends. 1: Menu wraps around.
-  \$meny_std_prefix       - Text/ANSI before each non-selected item.
-  \$meny_std_suffix       - Text/ANSI after each non-selected item.
-  \$meny_sel_prefix       - Text/ANSI before the selected item.
-  \$meny_sel_suffix       - Text/ANSI after the selected item.
-  \$meny_amend_width      - Formula or value to add to \$meny_width.
-  \$meny_amend_height     - Formula or value to add to \$meny_height.
+  \$meny_lnlmark       - Text/ANSI before each non-selected item.
+  \$meny_lnrmark       - Text/ANSI after each non-selected item.
+  \$meny_lslmark       - Text/ANSI before the selected item.
+  \$meny_lsrmark       - Text/ANSI after the selected item.
+  \$meny_awidth      - Formula or value to add to \$meny_width.
+  \$meny_aheight     - Formula or value to add to \$meny_height.
   \$meny_troffs           - Trim long labels at this column. If ending with '%'
                             the value represents a percentage of \$meny_width.
   \$meny_trmark           - Marker shown at \$meny_troffs on trimmed labels.
@@ -92,13 +97,13 @@ Environment varibles:
     \$meny_height         - \$LINES   if present, or 25 if not.
     \$meny_limit          - 1000     For unlimited items, set it to 0.
     \$meny_wrap           - 0        Menu stops at its ends.
-    \$meny_sel_prefix     - "\\e[7m"  ANSI sequence for inverting color.
+    \$meny_lslmark     - "\\e[7m"  ANSI sequence for inverting color.
 
   As prefixes & suffixes might contain non-printable text (e.g ANSI), their
   string lengths cannot be used when calculating how much to trim the labels.
-  As \$meny_width + \$meny_amend_width = effective width, one solution is to set
-  \$meny_amend_width to the longest prefix / suffix width used. Given that
-  \$meny_std_prefix='>' & \$meny_sel_suffix='(select)', meny_amend_width should
+  As \$meny_width + \$meny_awidth = effective width, one solution is to set
+  \$meny_awidth to the longest prefix / suffix width used. Given that
+  \$meny_lnlmark='>' & \$meny_lsrmark='(select)', meny_awidth should
   be set to -8 (the width of the '(select)'-text) to prevent width-overflow.
 
 Special labels & values (not applicable in simple-mode):
@@ -204,11 +209,11 @@ render_items() {
     for (( i = 0; i < meny_height; i++ )); do
         (( item_index = buf_offs + i ))
         if (( item_index == pick )); then
-            prefix="$meny_sel_prefix"
-            suffix="$meny_sel_suffix"
+            prefix="$meny_lslmark"
+            suffix="$meny_lsrmark"
         else
-            prefix="$meny_std_prefix"
-            suffix="$meny_std_suffix"
+            prefix="$meny_lnlmark"
+            suffix="$meny_lnrmark"
         fi
         clear_to_end
         write "${prefix}${item_labels[$item_index]}${suffix}"
