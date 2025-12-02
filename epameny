@@ -205,19 +205,14 @@ load_items() {
 }
 
 render_items() {
-    local suffix prefix item_index i
+    local index i
     reset_color
     for (( i = 0; i < meny_height; i++ )); do
-        (( item_index = buf_offs + i ))
-        if (( item_index == pick )); then
-            prefix="$meny_sel_beg"
-            suffix="$meny_sel_end"
-        else
-            prefix="$meny_nsel_beg"
-            suffix="$meny_nsel_end"
-        fi
         clear_to_end
-        write "${prefix}${item_labels[$item_index]}${suffix}"
+        (( index = buf_offs + i ))
+        (( index == pick )) \
+            && write "$meny_sel_beg${item_labels[$index]}$meny_sel_end" \
+            || write "$meny_nsel_beg${item_labels[$index]}$meny_nsel_end"
         reset_color
         (( i < meny_height - 1 )) && goto_next_row_alt
     done
