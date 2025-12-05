@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# This is just an EXAMPLE for epameny: A `cd` wrapper menu as a bash function.
-# Note that this must be sourced in your shell for 'cd' to have an effect,
-# e.g `. chdir_function; cd_menu`.
+# This is an example for epameny.
+# A `cd` wrapper menu in the form of a bash function.
+# Source it in your shell (e.g '. cd_menu_function; cd_menu') to try it.
 
-cd_menu() {
+epacd() {
     local header=('OK' '::quit::' '⬏ ../' '../')
 	local dir data
     clear
@@ -12,7 +12,7 @@ cd_menu() {
         mapfile -t dirlist < <(compgen -G '*/')
         for dir in "${dirlist[@]}"; do list+=("$dir" '::'); done
         echo -e "\033[H\033[4m$PWD\033[0m\033[J"
-        data=($(epameny 1 "${header[@]}" "${list[@]}" )) || return
+        data=($(meny_pick=1 epameny "${header[@]}" "${list[@]}" )) || return
         filename="${data[@]:1}"
         cd "$filename"
     done

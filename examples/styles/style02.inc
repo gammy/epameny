@@ -1,7 +1,13 @@
-export meny_sel_prefix="⚪\033[4m" # adds 1 ('⚪' = 1 glyph) to our width
-export meny_std_prefix="  "        # adds 2 ('  ' = 2 glyphs).
+# This is a configuration example for epameny.
+# Add a bulletpoint to the beginning a selected label and underline the text.
+# Also add a space to the beginning of unselected labels to align them.
 
-# Amend epameny's width by the longest of the two.
-# This prevents printing past the terminal's width:
+sel="⚪" # adds 1 ('⚪' = 1 glyph) to our width
+uns="  " # adds 2 ('  ' = 2 glyphs)
 
-export meny_amend_width=-2
+# Ajdust width to the longer of the two (-1 or -2 respectively)
+(( meny_awidth = (${#sel} > ${#uns} ? ${#sel} : ${#uns}) * -1 ))
+
+export meny_awidth
+export meny_sel_beg="${sel}\033[4m" # 1 visible, 6 invisible
+export meny_nsel_beg="${uns}"      # 2 visible

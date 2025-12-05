@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# This is just an EXAMPLE for epameny:
+# This is an example for epameny.
 # Select a user and show their processes in a stupid way.
 
 entries=()
@@ -8,7 +8,7 @@ for name in $(compgen -u | sort -d); do
 done
 
 echo "Select a user to view processes for."
-data=($(epameny 0 "${entries[@]}")) || exit 0
+data=($(epameny "${entries[@]}")) || exit 0
 
 entries=()
 mapfile -t pinfo < <(${data[1]} ${data[@]:2})
@@ -22,5 +22,5 @@ if (( ${#entries[@]} == 0 )); then
 fi
 
 echo "Select a process:"
-data=($(epameny 0 "${entries[@]}")) || exit 0
+data=($(epameny "${entries[@]}")) || exit 0
 echo "Selected PID: ${data[1]}"

@@ -1,8 +1,8 @@
-#!/usr/bin/env bash
-# This is just an EXAMPLE for epameny:
+!/usr/bin/env bash
+# This is an example for epameny.
 # A menu-wrapper for xdg-open.
 
-[[ -f 'styles/silly_01.inc' ]] && source 'styles/silly_01.inc'
+[[ -f 'styles/style01.inc' ]] && source 'styles/style01.inc'
 
 for dep in xdg-open epameny; do
     which $dep >/dev/null 2>&1 \
@@ -22,5 +22,5 @@ for item in $(compgen -G "$1"); do
 done
 
 (( ${#items[@]} == 0 )) && { echo "No matches found."; exit 0; }
-data=($(epameny 0 'Back' ::quit:: "${items[@]}")) || exit 0
+data=($(epameny 'Back' ::quit:: "${items[@]}")) || exit 0
 xdg-open "${data[@]:1}"

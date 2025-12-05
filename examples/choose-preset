@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# This is just an EXAMPLE.
+# This is an example for epameny.
 
-[[ -f 'styles/silly_02.inc' ]] && source 'styles/silly_02.inc'
+[[ -f 'styles/style02.inc' ]] && source 'styles/style02.inc'
 
 echo 'Select a Preset: '
-data=($(epameny -1 \
+data=($(meny_pick=-1 epameny \
         Ultrafast :: \
         Superfast :: \
         Veryfast  :: \
