@@ -149,11 +149,9 @@ directory, which maps getopt-long-styled options to environment variables.
 ### Default pick (selection)
 
 `meny_pick` can be used to set a different default item (`0` being the default).
-For example, `meny_pick=3` sets the 3nd item, `meny_pick=-3` sets the 3rd from
-last.
 
-In other words, items are zero-indexed: The first item is index 0, the fifth is
-index 4. A negative default index can be used to select items in reverse order.
+Items are zero-indexed: The first item is index 0, the fifth is index 4.
+Negative indexes can be used to select items in reversed order.
 
 ### Terminal dimensions
 
