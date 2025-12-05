@@ -4,15 +4,15 @@
 #
 # This will not work on all setups: the keyboard input routine makes
 # several assumtions regarding meta-keys in the operating environment.
-# The display routines also assume that the terminal is aware of basic
-# ANSI escape sequences (CUD / CUU / CHA, SGR, ED and ?25 (from VT220)).
+# The display routines assume that the terminal is aware of basic
+# ANSI escape sequences (CUD / CUU / CHA, SGR, ED and DECTCEM).
 # For a more robust & full-featured menu program, see dialog (1).
 #
 # Copyright (C) 2025 Kristian Gunstone
 # Use of this source code is governed by the Simplified BSD License:
 # https://opensource.org/license/bsd-2-clause
 
-meny_version='0.9.9'
+meny_version='1.0'
 
 meny_simple=${meny_simple:-0}
 meny_limit="${meny_limit:-1000}"
