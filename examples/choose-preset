@@ -3,7 +3,8 @@
 
 [[ -f 'styles/style02.inc' ]] && source 'styles/style02.inc'
 
-echo 'Select a Preset: '
+# Normal mode (somewhat superfluous here)
+echo 'Select a preset: '
 data=($(meny_pick=-1 epameny \
         Ultrafast :: \
         Superfast :: \
@@ -20,5 +21,15 @@ data=($(meny_pick=-1 epameny \
 index=$data
 value="${data[@]:1}"
 
+echo
+echo "Selected '$value' (index $index)"
+
+# Simple mode (necessitates handling 'Cancel' explicitly)
+echo 'Select a preset again: '
+data=($(meny_pick=-1 meny_simple=1 epameny Ultrafast Superfast Veryfast \
+        Faster Fast Medium Slow Slower Veryslow Placebo Cancel)) || exit
+index=$data
+value="${data[@]:1}"
+[[ "$value" == 'Cancel' ]] && { echo "Cancel explicitly caught"; exit; }
 echo
 echo "Selected '$value' (index $index)"
