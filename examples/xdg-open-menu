@@ -1,4 +1,4 @@
-!/usr/bin/env bash
+#!/usr/bin/env bash
 # This is an example for epameny.
 # A menu-wrapper for xdg-open.
 
