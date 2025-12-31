@@ -1,0 +1,14 @@
+1.0.1:
+    - Combine the four beg/end variables into two; see MIGRATING for details.
+    - Change the default trim marker column from 40% of the terminal width to
+      100%, i.e the right edge.
+    - A new configuration variable, `meny_reset`, has been added. It contains
+      the ANSI escape sequence printed on epameny start and after each label
+      has been printed. The default is "0m" (SGR), which is the same as before.
+    - Epameny now explicitly checks that Bash is newer than or equal to 4.3,
+      as that's the minimum version required. Some systems (notably MacOS)
+      (at the time of writing) ships with Bash 3.2 from 2006. The reason for
+      this is probably because that's when Bash changed its license from GPL2
+      to GPL3. Epameny makes use of variable references (`local -n`) and other
+      features which are not available in these versions.
+    - Miscellaneous minor changes
