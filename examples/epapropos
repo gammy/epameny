@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# A manpage selector & viewer.
+# This is an example for epameny.
+
+if (( $# == 0 )); then
+    echo "Usage:" $(basename "$0") "<keyword> [keyword] ..."
+    exit 0
+fi
+
+mapfile -t matches < <(apropos --and "$@")
+(( ${#matches[@]} == 0 )) && exit
+
+items=("Back" "::quit::")
+for label in "${matches[@]}"; do
+    value=$(echo "$label" |  cut -d ' ' -f 1,2 | tr -d '()')
+    items+=("$label" "$value")
+done
+
+echo "Matches: ${#matches[@]}"
+
+dims=($(stty size))
+export LINES="${dims[0]}" COLUMNS="${dims[1]}"
+export meny_wrap=1 meny_aheight=-1 meny_pick=1
+
+data=($(epameny "${items[@]}")) || exit 1
+
+subject="${data[1]}"
+section="${data[2]}"
+
+man "$section" "$subject"

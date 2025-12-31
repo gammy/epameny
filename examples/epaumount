@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# A device unmount helper.
+# This is an example for epameny.
+
+meny_pickfmt="➡ \e[1m::label::\e[0m"
+meny_normfmt="  ::label::"
+meny_awidth=-10 # 8 ansi chars, arrow, space
+meny_aheight=-3 # for header occupying 3 rows
+
+mapfile -t mountinfo < <(df -h | grep -e '^Filesystem' -e '^/dev/')
+
+echo -e "\033[1mWhat do you want to unmount?\033[0m\n\n${mountinfo[0]}"
+
+items=()
+for label in "${mountinfo[@]:1}"; do
+    mountpoint=$(echo "$label" | sed -E 's/^(\S+\s+){4}\S+ //')
+    items+=("$label" "$mountpoint")
+done
+items+=(Quit ::quit::)
+
+export meny_awidth meny_pickfmt meny_normfmt
+
+data=($(epameny "${items[@]}")) || exit 0
+sudo umount "${data[@]:1}"
