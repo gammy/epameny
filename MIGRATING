@@ -1,0 +1,23 @@
+Migration information for hackers:
+
+1.0 -> 1.0.1:
+    Label formatting
+    ----------------
+    meny_sel_[beg/end] & meny_nsel_[beg/end] have been combined into
+    meny_pickfmt & meny_normfmt. Effectively,
+
+        meny_pickfmt="${meny_sel_beg}::label::${meny_sel_end}"
+        meny_normfmt="${meny_nsel_beg}::label::${meny_nsel_end}"
+
+    Epameny replaces '::label::' with the item's label.
+
+    This prior code:
+        meny_sel_beg='->'
+        meny_sel_end='<-'
+        meny_nsel_beg='  '
+        meny_nsel_end=' meh'
+
+    Should be rewritten as:
+
+        meny_pickfmt='->::label::<-'
+        meny_normfmt='  ::label:: meh'
