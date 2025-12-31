@@ -9,5 +9,5 @@ uns="  " # adds 2 ('  ' = 2 glyphs)
 (( meny_awidth = (${#sel} > ${#uns} ? ${#sel} : ${#uns}) * -1 ))
 
 export meny_awidth
-export meny_sel_beg="${sel}\033[4m" # 1 visible, 6 invisible
-export meny_nsel_beg="${uns}"      # 2 visible
+export meny_pickfmt="${sel}\033[4m::label::" # 1 visible, 6 invisible
+export meny_normfmt="${uns}::label::"        # 2 visible

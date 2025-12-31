@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
+# A 'grep' menu wrapper. Show results & open the selection on the matched line.
 # This is an example for epameny.
-# A 'grep' menu wrapper: show results & open the selection on the matched line.
 
 mapfile -t < <(grep --line-number "$@" 2>/dev/null) || exit
 (( ${#MAPFILE[@]} == 0 )) && exit

@@ -5,3 +5,10 @@ data=($(meny_pick=-1 epameny 'Item A' 123 'Item B' :: Quit ::quit::)) || exit
 index="${data[0]}"   # Param 0 : item index
 value="${data[@]:1}" # Param 1+: item value(s)
 echo "Item index $index has value ${value@Q}"
+
+echo
+
+data=($(meny_simple=1 epameny 'One' 'Two' 'Three'))
+index="${data[0]}"   # Param 0 : item index
+value="${data[@]:1}" # Param 1+: item value(s)
+echo "Item index $index has value ${value@Q}"

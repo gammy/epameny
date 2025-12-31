@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# This is an example for epameny.
 # A menu-wrapper for xdg-open.
+# This is an example for epameny.
 
 [[ -f 'styles/style01.inc' ]] && source 'styles/style01.inc'
 

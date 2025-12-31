@@ -9,13 +9,13 @@
 #    export "${exports[@]}"
 #    epameny ...
 
-# Convert longopts-style options ("--width=..", "--sel-beg=..") to
-# environment variable exports (`meny_width=..`, `meny_sel_beg=..`)
+# Convert longopts-style options ("--width=..", "--pickfmt=..") to
+# environment variable exports (`meny_width=..`, `meny_pickfmt=..`)
 epameny_argparse() {
     local -n export_ptr="$1"; shift
     local arg val valid keywords
     keywords=(simple pick limit wrap width height awidth aheight
-              sel_beg sel_end nsel_beg nsel_end trimmark trimcol)
+              normfmt pickfmt trimmark trimcol)
     while (( $# > 0 )); do
         arg="${1/=*}"
         val="${1/*=}"
@@ -33,4 +33,3 @@ exports=()
 epameny_argparse 'exports' "$@"
 export "${exports[@]}"
 unset epameny_export exports # cleanup
-
