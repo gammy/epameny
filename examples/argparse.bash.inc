@@ -15,7 +15,7 @@ epameny_argparse() {
     local -n export_ptr="$1"; shift
     local arg val valid keywords
     keywords=(simple pick limit wrap width height awidth aheight
-              normfmt pickfmt trimmark trimcol)
+              reset normfmt pickfmt trimmark trimcol)
     while (( $# > 0 )); do
         arg="${1/=*}"
         val="${1/*=}"
