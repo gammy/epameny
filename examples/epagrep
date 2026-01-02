@@ -1,33 +1,94 @@
 #!/usr/bin/env bash
-# A 'grep' menu wrapper. Show results & open the selection on the matched line.
+# A 'grep' menu wrapper: show results & open the selection on the matched line.
 # This is an example for epameny.
+#
+open_default=${open_default:-xdg-open}
+meny_simple=0
+meny_trimmark='/../'
+meny_trimcol=100%
 
-mapfile -t < <(grep --line-number "$@" 2>/dev/null) || exit
-(( ${#MAPFILE[@]} == 0 )) && exit
+if [[ "$1" = "-h" || "$1" = "--help" ]] || (( $# == 0 )); then
+    self=$(basename "$0")
+    cat << EOF
+$self: an epameny wrapper for grep.
 
-items=()
-for line in "${MAPFILE[@]}"; do
-    filename="${line/:*}"
-    label=$(echo "$line" | tr -d '\\')
+Usage:
+    [something |] $self [-|--stdin] [--open cmd] [--read] <grep-args>
 
-    # number=$(echo "$label" | tr -d: -f2)
-    (( num_offs = ${#filename} + 1 ))
-    tmp=${label:$num_offs}; number=${tmp/:*}
+Options:
+    - / --stdin      Read input from stdin and pipe it to grep.
+    --open <command> Try to open the selection with <command>.
+                     The default is to ask.
+    --read           Try to open the selection with \$VISUAL, jumping to the
+                     line matched by grep (not applicable via stdin). If
+                     \$VISUAL is unset, 'less' is used.
 
-    items+=("$label" "$number $filename")
+Examples:
+    $self foo bar.txt
+    $self --text -r foo doc/notes/
+    find . -type d -maxdepth 1 | $self --open thunar foo
+EOF
+    exit 0
+fi
+
+grepargs=('--line-number')
+read_stdin=0
+
+while (( $# > 0 )); do
+    case "$1" in
+        -|--stdin)
+            read_stdin=1
+            grepargs=("${grepargs[@]:1}") ;;
+        --open)
+            open_with="$2"
+            shift ;;
+        --read)
+            open_with='::text::' ;;
+        *)
+            grepargs+=("$1") ;;
+    esac
+    shift
 done
 
-export meny_simple=0 \
-       meny_trimmark=$'$' \
-       meny_trimcol=100%
-ret=($(epameny "${items[@]}")) || exit
+mapfile -t list < <(grep "${grepargs[@]}" 2>/dev/null) || exit
 
+(( ${#list[@]} == 0 )) && exit
+items=()
+
+if (( read_stdin )); then
+    exec 0>&1
+    for line in "${list[@]}"; do
+        label=$(echo "$line" | tr -d '\\')
+        items+=("$label" "0 $line")
+    done
+else
+    for line in "${list[@]}"; do
+        filename="${line/:*}"
+        label=$(echo "$line" | tr -d '\\')
+        (( num_offs = ${#filename} + 1 ))
+        tmp=${label:$num_offs}; number=${tmp/:*}
+        items+=("$label" "$number $filename")
+    done
+fi
+
+export meny_simple meny_trimmark meny_trimcol
+
+ret=($(epameny "${items[@]}" )) || exit
 index=${ret[0]}
 number="${ret[1]}"
 filename="${ret[@]:2}"
 
-case "$VISUAL" in
-    *vi*) "$VISUAL" -c ":$number" "$filename" ;;
-    nano) "$VISUAL" -@ "$filename:$number" ;;
-       *) less +gj"$number" "$filename" ;;
-esac
+if [[ "$open_with" == '::text::' ]]; then
+    case "$VISUAL" in
+        *vi*) "$VISUAL" -c ":$number" "$filename" ;;
+        nano) "$VISUAL" -@ "$filename:$number" ;;
+           *) less +gj"$number" "$filename" ;;
+    esac
+else
+    if [[ -n "$open_with" ]]; then
+        eval "$open_with" "$filename"
+    else
+        read -a run_cmd -E -i "$open_default" -p "Open with: "
+        eval "${run_cmd[@]}" "$filename"
+    fi
+fi

@@ -7,6 +7,8 @@ if (( $# == 0 )); then
     exit 0
 fi
 
+first="$1"
+
 mapfile -t matches < <(apropos --and "$@")
 (( ${#matches[@]} == 0 )) && exit
 
@@ -27,4 +29,6 @@ data=($(epameny "${items[@]}")) || exit 1
 subject="${data[1]}"
 section="${data[2]}"
 
-man "$section" "$subject"
+PAGER="${PAGER:-less}"
+MANPAGER="$PAGER --pattern '$first'" \
+    man "$section" "$subject"
