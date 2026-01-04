@@ -1,3 +1,9 @@
+1.0.2 (WIP):
+    - Add support for reading items from stdin. When epameny is invoked with
+      `-` (dash) as its only argument, it will read items ordinarily supplied
+      as commandline arguments from standard input. Each entry is delimited by
+      newline (as parsed by `mapfile -t`).
+
 1.0.1:
     - Combine the four beg/end variables into two; see MIGRATING for details.
     - Change the default trim marker column from 40% of the terminal width to

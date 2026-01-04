@@ -12,7 +12,7 @@
 # Use of this source code is governed by the Simplified BSD License:
 # https://opensource.org/license/bsd-2-clause
 
-meny_version='1.0.1'
+meny_version='1.0.2 WIP'
 
 if [ "${BASH_VERSINFO[0]}${BASH_VERSINFO[1]}" -lt 43 ]; then
     echo "Bash version 4.3 or newer is required by epameny. Sorry." >&2
@@ -259,7 +259,12 @@ select_item() {
 }
 
 (( $# < 1 )) && { show_usage; exit 0; }
-(( ! meny_simple && $# % 2 != 0 )) \
+
+(( $# == 1 )) && [[ "$1" == '-' ]] \
+    && { mapfile -n "$meny_limit" -t list; exec 0>&1; } \
+    || list=("$@")
+
+(( ! meny_simple && ${#list[@]} % 2 != 0 )) \
     && { echo 'Unmatched label/value' >&2; exit 1; };
 
 pick="${meny_pick:-0}"
@@ -268,7 +273,8 @@ pick="${meny_pick:-0}"
 trap 'exit 1' INT
 trap 'show_cursor; echo >&2' EXIT
 
-load_items "$@"
+load_items "${list[@]}"
+unset list
 
 (( pick >= num_items ))       && pick=-1
 (( pick < 0 ))                && (( pick = num_items + pick ))

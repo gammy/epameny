@@ -37,7 +37,6 @@ This list could be endless, but this should give you a rough idea.
 * Can't navigate more than one item at a time
 * Lacks pagination & label completion
 * Can't auto-determine terminal dimensions (no termcap/terminfo dependency)
-* Can't act as a pipe (doesn't read items from `stdin`)
 * Can't trim on word-boundaries
 * Lacks horizontal scrolling
 * Lacks real-time signalling mechanisms

@@ -1,5 +1,27 @@
 Migration information for hackers:
 
+1.0.1 -> 1.0.2 (WIP):
+    epameny now has one command-line argument which is only parsed as such when
+    it is the sole argument: `-` (dash). When this condition is met, items are
+    read from stdin.
+    This introduces an (unlikely but possible) incompatibility in simple-mode
+    (meny_simple=1) where this mode (reading from stdin) is incorrectly
+    triggered if there only is one valid input which happens to be `-`.
+
+    In other words, this test will fail:
+
+        mkdir emptyDirectory
+        cd emptyDirectory
+        mkdir '-'
+        meny_simple=1 epameny $(ls -1)
+
+    If this condition is something you're worried about, you will now have to
+    check for and handle this condition somehow; for example by surrounding
+    the input in quotes.
+    Alternatively, and perhaps more reasonably if the use-case is this
+    advanced, Epameny's normal mode should be used instead of simple mode.
+
+
 1.0 -> 1.0.1:
     Label formatting
     ----------------
