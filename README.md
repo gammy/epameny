@@ -4,10 +4,11 @@
 
 Epameny is a terminal-based item-selection menu with Bash as its only dependency.
 
-It takes command-line parameters as items and presents them on the terminal.
+It treats arguments on the command-line (or from `stdin`) as menu-items and
+presents them as a vertical menu on the terminal.
 The user selects an item and the corresponding value is returned via `stdout`.
 
-It's behaviourally similar to `dialog`'s standard item selection mode, but far more primitive.
+It's a very primitive alternative to `dialog`'s standard list-item mode.
 
 *Epa* is used in Swedish to emphasise that something is cruddy or slow.
 *Meny* is simply *menu* in Swedish.
@@ -23,7 +24,8 @@ It's behaviourally similar to `dialog`'s standard item selection mode, but far m
 
 ## Requirements
 
-* `Bash` version `4.3` (released in 2014) or later (beware Mac & QOS users, your OS uses Bash 3.2 from 2006!)
+* `Bash` version `4.3` (released in 2014) or later \
+  (beware Mac & QOS users, your OS uses Bash 3.2 from 2006!)
 * A terminal capable of basic ANSI escape sequences \
   (basically any `xterm` or `VT220`-like terminal)
 
@@ -46,6 +48,15 @@ This list could be endless, but this should give you a rough idea.
 
 ## Usage
 
+Epameny reads arguments either from the command-line or, if the one and only
+command-line argument is `-` (a dash-sign), from `stdin`.
+
+The only difference is that when reading from stdin, newline is used as an
+argument separator rather than a space.
+
+The following descriptions demonstrate epamenu's operation using the former
+input method (command-line arguments).
+
 ### Normal mode
 
 In normal mode, items consist of label-value pairs:
@@ -54,9 +65,9 @@ In normal mode, items consist of label-value pairs:
 epameny 'label 1' 'value 1' 'label 2' 'value 2' ...
 ```
 
-Epameny expects command-line arguments to consist of labels and values
-("item pairs"), where labels are the portion of an item that is presented, and
-values are the portion returned upon the user accepting a selection.
+Epameny expects arguments to consist of labels and values ("item pairs"), where
+labels are the portion of an item that is presented, and values are the portion
+returned upon the user accepting a selection.
 
 ```
 $ foo=$(epameny 'hello world' 'dance with me')
@@ -291,11 +302,11 @@ Usage:
   epameny <label> <value> [<label> <value>] [...]
   meny_simple=1 epameny <label> [label] [...]
 
-Creates an interactive menu consisting of one or more label/value-pairs. 
-Once an item is confirmed, the associated item index & value is printed to 
+Creates an interactive menu consisting of one or more label/value-pairs.
+Once an item is confirmed, the associated item index & value is printed to
 standard output for the caller to capture & process. The menu itself is printed
-to standard error. In simple-mode (meny_simple=1), all items are treated as 
-labels with values set to '::' (see below). epameny supports vertical 
+to standard error. In simple-mode (meny_simple=1), all items are treated as
+labels with values set to '::' (see below). epameny supports vertical
 scrolling, & width-trimming of labels.
 
 Indexes count from 0: The first item is index 0, the fifth is index 4.
