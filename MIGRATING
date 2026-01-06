@@ -1,6 +1,6 @@
 Migration information for hackers:
 
-1.0.1 -> 1.0.2 (WIP):
+1.0.1 -> 1.0.2:
     epameny now has one command-line argument which is only parsed as such when
     it is the sole argument: `-` (dash). When this condition is met, items are
     read from stdin.
