@@ -296,18 +296,19 @@ Epameny uses just a handful of escape sequences to manipulate the terminal:
 (This README document may be out of date - best check the script itself)
 
 ```
-epameny v1.0.1: A ridiculous ANSI menu by gammy (code at gammy dot dev)
+epameny v1.0.2: A ridiculous ANSI menu by gammy (code at gammy dot dev)
 
 Usage:
   epameny <label> <value> [<label> <value>] [...]
   meny_simple=1 epameny <label> [label] [...]
+  ... | epameny -
 
-Creates an interactive menu consisting of one or more label/value-pairs.
-Once an item is confirmed, the associated item index & value is printed to
-standard output for the caller to capture & process. The menu itself is printed
-to standard error. In simple-mode (meny_simple=1), all items are treated as
-labels with values set to '::' (see below). epameny supports vertical
-scrolling, & width-trimming of labels.
+Creates an interactive menu consisting of one or more label/value-pairs. Once
+an item is confirmed, the associated item index & value is printed to standard
+output for the caller to capture & process. The menu itself is printed to
+standard error. In simple-mode (meny_simple=1), all items are treated as labels
+with values set to '::' (see below). epameny supports vertical scrolling, &
+width-trimming of labels.
 
 Indexes count from 0: The first item is index 0, the fifth is index 4.
 
@@ -351,8 +352,8 @@ Default values:
 
 The length of a label is computed without consideration of ANSI escape codes.
 Similarly, meny_pickfmt & meny_normfmt is also not considered. meny_awidth can
-be used to adjust the width-calculation if needed. For example if 
-$meny_normfmt='\e[1m->::label::', meny_awidth should be set to -2 to account 
+be used to adjust the width-calculation if needed. For example if
+$meny_normfmt='\e[1m->::label::', meny_awidth should be set to -2 to account
 for the arrow whilst ignoring the invisible ANSI code for bolding it.
 
 Placeholders:
@@ -366,6 +367,7 @@ Examples:
   meny_simple=1 epameny 'A label' 'Another label' 'And a third'
   data=($(meny_pick=-1 epameny 'Item A' :: 'Item B' 123 Quit ::quit::)) || exit
   echo "Item index ${data[0]} has value ${data[@]:1}"
+  ls | meny_simple=1 epameny -
 
 ```
 
