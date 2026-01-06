@@ -1,18 +1,16 @@
 #!/usr/bin/env bash
-# epameny: A ridiculous ANSI menu written entirely in bash.
-# By gammy, anno 2025. To reach me, try https://github.com/gammy
+# Epameny: A ridiculous ANSI menu written entirely in bash.
+# Website: https://github.com/gammy/epameny
+# By gammy, anno 2025.
 #
-# This will not work on all setups: the keyboard input routine makes
-# several assumtions regarding meta-keys in the operating environment.
-# The display routines assume that the terminal is aware of basic
-# ANSI escape sequences (CUD / CUU / CHA, SGR, ED and DECTCEM).
-# For a more robust & full-featured menu program, see dialog (1).
+# This script has limitations and may not work in your environment.
+# See the README.md-file for more information, or peruse the code below.
 #
 # Copyright (C) 2025 Kristian Gunstone
 # Use of this source code is governed by the Simplified BSD License:
 # https://opensource.org/license/bsd-2-clause
 
-meny_version='1.0.2 WIP'
+meny_version='1.0.2'
 
 if [ "${BASH_VERSINFO[0]}${BASH_VERSINFO[1]}" -lt 43 ]; then
     echo "Bash version 4.3 or newer is required by epameny. Sorry." >&2
@@ -61,6 +59,7 @@ $self v$meny_version: A ridiculous ANSI menu by gammy (code at gammy dot dev)
 Usage:
   $self <label> <value> [<label> <value>] [...]
   meny_simple=1 $self <label> [label] [...]
+  ... | $self -
 
 Creates an interactive menu consisting of one or more label/value-pairs. \
 Once an item is confirmed, the associated item index & value is printed \
@@ -126,6 +125,7 @@ Examples:
   meny_simple=1 $self 'A label' 'Another label' 'And a third'
   data=(\$(meny_pick=-1 $self 'Item A' :: 'Item B' 123 Quit ::quit::)) || exit
   echo "Item index \${data[0]} has value \${data[@]:1}"
+  ls | meny_simple=1 $self -
 
 EOF
 }
