@@ -229,9 +229,8 @@ meny_pickfmt="->::label::<-"
 meny_normfmt="  ::label::"
 ```
 
-Makes the menu appear as this when the 'Bananas' item is picked. ANSI escape
-codes will work fine as well, as epameny (for better or worse) doesn't filter
-input (see also *ANSI escape sequences*).
+Makes the menu appear like this when the 'Bananas' item is picked:
+
 ```
   Apples
 ->Bananas<-
@@ -281,12 +280,12 @@ Epameny uses just a handful of escape sequences to manipulate the terminal:
 - `CUD`, `CUU`, `CHA` & `SGR` are used for movement & default color attributes.
 - `DECTCEM` (VT220 cursor enable) is used for showing & hiding the cursor.
 
-Epameny doesn't filter input, which can sometimes result in labels not being
-desplayed as expected (or worse). For example, a single tab (`\t`) character
-will probably be displayed by the terminal as eight spaces (see the `tabs (1)`
+Epameny doesn't filter input, which can result in labels not being displayed
+as expected (or worse). For example, a single tab (`\t`) character
+will likely be displayed by the terminal as eight spaces (see the `tabs (1)`
 manpage) which epameny is unaware of.
 
-Sanitise the input first as needed, or modify epameny to tailor for your needs.
+Sanitise the input first as needed, or modify epameny to your needs.
 
 ## Help
 
@@ -367,6 +366,7 @@ Examples:
   ls | meny_simple=1 epameny -
 
 ```
+
 ## Notes
 
 I don't want this to grow much further than it already has: it's been written
@@ -377,7 +377,6 @@ probably wise to move to a better menu such as `dialog`, or to rewrite epameny
 in a faster and simpler language like C or Python to then extend it.
 
 I quite fancy doing the latter, but time will tell.
-
 
 ## Contact
 
