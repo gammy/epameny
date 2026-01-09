@@ -230,7 +230,8 @@ meny_normfmt="  ::label::"
 ```
 
 Makes the menu appear as this when the 'Bananas' item is picked. ANSI escape
-codes will work fine as well, but
+codes will work fine as well, as epameny (for better or worse) doesn't filter
+input (see also *ANSI escape sequences*).
 ```
   Apples
 ->Bananas<-
@@ -253,7 +254,7 @@ As detailed in *Appearance*, `meny_normfmt` and `meny_pickfmt` define the
 appearance of labels. The placeholder `::label::` is replaced by an actual
 label. `Epameny` wants there to be only one such placeholder in each variable.
 
-### "`::`
+### "`::`"
 *Not available in in simple-mode (`meny_simple=1`).*
 
 A label or value set to `::` will copy the other field's content:
@@ -272,17 +273,6 @@ The following example thus triggers `return` when the user picks `Cancel`:
 epameny "Foo" :: "Bar" :: "Cancel" ::quit:: || return
 ```
 
-## Notes
-
-I don't want this to grow much further than it already has: it's been written
-as an exercise which I hope might be useful or educational.
-The focus has been on zero dependencies (sans bash of course) whilst still being
-at least somewhat efficient. If more advanced functionality is needed, it's
-probably wise to move to a better menu such as `dialog`, or to rewrite epameny
-in a faster and simpler language like C or Python to then extend it.
-
-I quite fancy doing the latter, but time will tell.
-
 ### ANSI escape sequences
 
 Epameny uses just a handful of escape sequences to manipulate the terminal:
@@ -290,6 +280,13 @@ Epameny uses just a handful of escape sequences to manipulate the terminal:
 - `ED` is used for clearing portions of the screen.
 - `CUD`, `CUU`, `CHA` & `SGR` are used for movement & default color attributes.
 - `DECTCEM` (VT220 cursor enable) is used for showing & hiding the cursor.
+
+Epameny doesn't filter input, which can sometimes result in labels not being
+desplayed as expected (or worse). For example, a single tab (`\t`) character
+will probably be displayed by the terminal as eight spaces (see the `tabs (1)`
+manpage) which epameny is unaware of.
+
+Sanitise the input first as needed, or modify epameny to tailor for your needs.
 
 ## Help
 
@@ -370,6 +367,17 @@ Examples:
   ls | meny_simple=1 epameny -
 
 ```
+## Notes
+
+I don't want this to grow much further than it already has: it's been written
+as an exercise which I hope might be useful or educational.
+The focus has been on zero dependencies (sans bash of course) whilst still being
+at least somewhat efficient. If more advanced functionality is needed, it's
+probably wise to move to a better menu such as `dialog`, or to rewrite epameny
+in a faster and simpler language like C or Python to then extend it.
+
+I quite fancy doing the latter, but time will tell.
+
 
 ## Contact
 
