@@ -21,4 +21,4 @@ items+=(Quit ::quit::)
 export meny_awidth meny_pickfmt meny_normfmt
 
 data=($(epameny "${items[@]}")) || exit 0
-sudo umount "${data[@]:1}"
+sudo umount "${data[*]:1}"
