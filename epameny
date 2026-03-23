@@ -9,8 +9,9 @@
 # Copyright (C) 2025 Kristian Gunstone
 # Use of this source code is governed by the Simplified BSD License:
 # https://opensource.org/license/bsd-2-clause
+## shellcheck disable=SC2015,SC2154,SC2329
 
-meny_version='1.0.2'
+meny_version='1.0.3'
 
 if [ "${BASH_VERSINFO[0]}${BASH_VERSINFO[1]}" -lt 43 ]; then
     echo "Bash version 4.3 or newer is required by epameny. Sorry." >&2
@@ -30,10 +31,10 @@ meny_wrap=${meny_wrap:-0}
 meny_reset=${meny_reset:-$default_reset}
 meny_pickfmt=${meny_pickfmt:-$default_pickfmt}
 meny_trimmark=${meny_trimmark:-...}
-trimcol=${meny_trimcol:-100%}
+(( meny_width += (meny_awidth) ))   # extra () as `awidth` can be a formula
+(( meny_height += (meny_aheight) )) # extra () as `aheight` can be a formula
 
-(( meny_width += (meny_awidth) ))
-(( meny_height += (meny_aheight) ))
+trimcol=${meny_trimcol:-100%}
 if [[ "${trimcol: -1}" == '%' ]]; then
     (( trimcol = (${trimcol:0:-1} * meny_width) / 100 ))
 fi
@@ -130,35 +131,30 @@ Examples:
 EOF
 }
 
-write() { scrbuf+="$*"; }
-ansi()  { scrbuf+="\033[$*"; }
+write()             { scrbuf+="$*"; }
+ansi()              { scrbuf+="\033[$*"; }
 #goto_next_row()    { ansi "$1B"; } # CUD: Cursor Dn (doesn't scroll)
 goto_prev_row()     { ansi "$1A"; } # CUU: Cursor Up (doesn't scroll)
 goto_col()          { ansi "$1G"; } # CHA: Cursor Horisontal Absolute
 reset_color()       { ansi "$meny_reset"; }
 clear_to_end()      { ansi J; }     # ED: Erase In Display
-goto_next_row_alt() { write "\n"; } # Emulate CNL
+goto_next_row_alt() { write "\n"; }                     # Emulate CNL
 goto_prev_row_alt() { goto_prev_row "$1"; goto_col 1; } # Emulate CPL
-
-hide_cursor() { ansi "?25l"; }              # Hide Cursor (VT220)
-show_cursor() { echo -en "\033[?25h" >&2; } # Show Cursor (VT220) (unbuffered)
-
-update_screen() {
-    echo -en "$scrbuf" >&2
-    scrbuf=
-}
+hide_cursor()       { ansi "?25l"; }              # Hide Cursor (VT220)
+show_cursor()       { echo -en "\033[?25h" >&2; } # Show Cursor (VT220) (unbuffered)
+update_screen()     { echo -en "$scrbuf" >&2; scrbuf=; } # Flush buffer
 
 update_viewport() {
-    local dir=$1 buf_stop=$2 scr_stop=$3
+    local dir="$1" buf_stop="$2" scr_stop="$3"
     if (( pick == buf_stop )); then
         (( ! meny_wrap )) && return
         if (( dir == 1 )); then
             buf_offs=0 scr_offs=0 pick=0
             return
         fi
-        (( buf_offs = menu_end - meny_zheight ))
-        scr_offs=$meny_zheight
-        pick=$menu_end
+        (( buf_offs = menu_zend - meny_zheight ))
+        scr_offs="$meny_zheight"
+        pick="$menu_zend"
         return
     fi
     (( scr_offs == scr_stop )) && { (( buf_offs += dir )); return; }
@@ -175,27 +171,27 @@ read_key() {
       $'\n') return 1;; # Confirm
         q|Q) pick=-1 ;; # Cancel
         k|A) update_viewport -1 0 0 ;; # Move up
-        j|B) update_viewport 1 $menu_end $meny_zheight ;; # Move down
+        j|B) update_viewport 1 "$menu_zend" "$meny_zheight" ;; # Move down
     esac
     return 0
 }
 
 trim_label() {
-    local -n text=$1 # Pointer to the actual label
-    local text_len="${#text}"
+    local -n text_ref="$1" # Reference to the label variable
+    local text_len="${#text_ref}"
     (( text_len <= meny_width )) && return
-    # Note that `{head,mark,tail}_len` are modified on each label.
-    local head_len="$trimcol" mark_len="$trimcol_len" tail_len \
-          text_head tail_beg text_tail
+    # Note that `{head,mark,tail}_len` are modified on each label
+    local head_len="$trimcol" mark_len="$trimcol_len" \
+          tail_len text_head tail_beg text_tail
     if (( (head_len + mark_len) >= meny_width )); then
         head_len=${head_len_lookup[$marker_fit]}
         (( mark_len *= marker_fit ))
     fi
     (( tail_len = meny_width - (head_len + mark_len) ))
     (( tail_beg = text_len - tail_len ))
-    text_head="${text:0:$head_len}"
-    text_tail="${text:$tail_beg:$tail_len}"
-    text="${text_head}${meny_trimmark:0:$mark_len}${text_tail}"
+    text_head="${text_ref:0:$head_len}"
+    text_tail="${text_ref:$tail_beg:$tail_len}"
+    text_ref="${text_head}${meny_trimmark:0:$mark_len}${text_tail}"
 }
 
 load_items() {
@@ -204,9 +200,9 @@ load_items() {
     while (( $# > 0 )); do
         label="$1" value="$2"
         if (( ! meny_simple )); then
-            if [[ "$label" = '::' ]]; then
+            if [[ "$label" == '::' ]]; then
                 label="$value"
-            elif [[ "$value" = '::' ]]; then
+            elif [[ "$value" == '::' ]]; then
                 value="$label"
             fi
             item_values+=("$value")
@@ -216,7 +212,7 @@ load_items() {
         (( num_items++ ))
         # XXX will break '::quit::' if clipped off. Solvable?
         (( meny_limit > 0 && num_items >= meny_limit )) && break
-        shift $args_per_item
+        shift "$args_per_item"
     done
 }
 
@@ -249,8 +245,8 @@ select_item() {
         if (( last_pick != pick )); then
             render_items
             update_screen
-            goto_prev_row_alt $meny_zheight
-            last_pick=$pick
+            goto_prev_row_alt "$meny_zheight"
+            last_pick="$pick"
         fi
         read_key || return 0
         (( pick == -1 )) && return 1
@@ -258,14 +254,20 @@ select_item() {
     done
 }
 
-(( $# < 1 )) && { show_usage; exit 0; }
+(( $# == 0 )) && { show_usage; exit 0; }
 
-(( $# == 1 )) && [[ "$1" == '-' ]] \
-    && { mapfile -n "$meny_limit" -t list; exec 0>&1; } \
-    || list=("$@")
+if (( $# == 1 )) && [[ "$1" == '-' ]]; then
+    # Read items from stdin
+    mapfile -n "$meny_limit" -t list
+    exec 0>&1
+else
+    list=("$@")
+fi
 
-(( ! meny_simple && ${#list[@]} % 2 != 0 )) \
-    && { echo 'Unmatched label/value' >&2; exit 1; };
+if (( ! meny_simple && ${#list[@]} % 2 != 0 )); then
+    echo 'Unmatched label/value' >&2
+    exit 1
+fi
 
 pick="${meny_pick:-0}"
 (( args_per_item = 2 - meny_simple ))
@@ -273,8 +275,7 @@ pick="${meny_pick:-0}"
 trap 'exit 1' INT
 trap 'show_cursor; echo >&2' EXIT
 
-load_items "${list[@]}"
-unset list
+load_items "${list[@]}"; unset list
 
 (( pick >= num_items ))       && pick=-1
 (( pick < 0 ))                && (( pick = num_items + pick ))
@@ -283,7 +284,7 @@ unset list
 (( meny_height <= 0 ))        && meny_height=$default_height
 (( meny_height > num_items )) && meny_height=$num_items
 (( meny_zheight = meny_height - 1 )) # (convenience)
-(( menu_end = num_items - 1 ))       # (convenience)
+(( menu_zend = num_items - 1 ))      # (convenience)
 
 scrbuf=
 hide_cursor; select_item || exit 2
