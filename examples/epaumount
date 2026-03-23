@@ -5,11 +5,12 @@
 meny_pickfmt="➡ \e[1m::label::\e[0m"
 meny_normfmt="  ::label::"
 meny_awidth=-10 # 8 ansi chars, arrow, space
-meny_aheight=-3 # for header occupying 3 rows
+meny_aheight=-2 # for header occupying 3 rows
 
 mapfile -t mountinfo < <(df -h | grep -e '^Filesystem' -e '^/dev/')
 
-echo -e "\033[1mWhat do you want to unmount?\033[0m\n\n${mountinfo[0]}"
+echo -e "\033[1mWhat do you want to unmount?\033[0m"
+echo "${meny_normfmt/::*/}${mountinfo[0]}"
 
 items=()
 for label in "${mountinfo[@]:1}"; do
