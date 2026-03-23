@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # A 'grep' menu wrapper: show results & open the selection on the matched line.
 # This is an example for epameny.
-#
+
 open_default=${open_default:-xdg-open}
 meny_simple=0
 meny_trimmark='/../'
@@ -58,13 +58,15 @@ items=()
 if (( read_stdin )); then
     exec 0>&1
     for line in "${list[@]}"; do
-        label=$(echo "$line" | tr -d '\\')
+        read -r label < <( echo -ne "$line" | perl -pe '$_ =~ s/\t/<TAB>/g;
+                                                        $_ =~ s/\e/^[/g;')
         items+=("$label" "0 $line")
     done
 else
     for line in "${list[@]}"; do
         filename="${line/:*}"
-        label=$(echo "$line" | tr -d '\\')
+        read -r label < <( echo -ne "$line" | perl -pe '$_ =~ s/\t/<TAB>/g;
+                                                        $_ =~ s/\e/^[/g;')
         (( num_offs = ${#filename} + 1 ))
         tmp=${label:$num_offs}; number=${tmp/:*}
         items+=("$label" "$number $filename")
@@ -73,10 +75,9 @@ fi
 
 export meny_simple meny_trimmark meny_trimcol
 
-ret=($(epameny "${items[@]}" )) || exit
-index=${ret[0]}
-number="${ret[1]}"
-filename="${ret[@]:2}"
+data=($(epameny "${items[@]}" )) || exit
+number="${data[1]}"
+filename="${data[*]:2}"
 
 if [[ "$open_with" == '::text::' ]]; then
     case "$VISUAL" in
@@ -86,9 +87,9 @@ if [[ "$open_with" == '::text::' ]]; then
     esac
 else
     if [[ -n "$open_with" ]]; then
-        eval "$open_with" "$filename"
+        "$open_with" "$filename"
     else
-        read -a run_cmd -E -i "$open_default" -p "Open with: "
-        eval "${run_cmd[@]}" "$filename"
+        read -r -a run_cmd -E -i "$open_default" -p "Open with: "
+        "${run_cmd[@]}" "$filename"
     fi
 fi
